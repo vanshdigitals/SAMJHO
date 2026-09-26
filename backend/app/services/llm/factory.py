@@ -1,8 +1,6 @@
 
 from backend.app.core.config import settings
 from backend.app.services.llm.base import LLMProvider
-from backend.app.services.llm.claude import ClaudeProvider
-from backend.app.services.llm.gemini import GeminiProvider
 from backend.app.services.llm.groq import GroqProvider
 from backend.app.services.llm.mock import MockProvider
 
@@ -15,11 +13,15 @@ def get_llm_provider() -> LLMProvider:
             model_name=settings.GROQ_MODEL,
         )
     elif provider == "gemini":
+        from backend.app.services.llm.gemini import GeminiProvider
+
         return GeminiProvider(
             api_key=settings.LLM_API_KEY,
             model_name=settings.LLM_MODEL,
         )
     elif provider == "claude":
+        from backend.app.services.llm.claude import ClaudeProvider
+
         return ClaudeProvider(
             api_key=settings.LLM_API_KEY,
             model_name=settings.LLM_MODEL,
@@ -38,11 +40,15 @@ def get_fallback_llm_provider() -> LLMProvider | None:
             model_name=settings.GROQ_MODEL,
         )
     if provider == "claude":
+        from backend.app.services.llm.claude import ClaudeProvider
+
         return ClaudeProvider(
             api_key=settings.LLM_FALLBACK_API_KEY or settings.LLM_API_KEY,
             model_name=settings.LLM_FALLBACK_MODEL,
         )
     elif provider == "gemini":
+        from backend.app.services.llm.gemini import GeminiProvider
+
         return GeminiProvider(
             api_key=settings.LLM_FALLBACK_API_KEY or settings.LLM_API_KEY,
             model_name=settings.LLM_MODEL,

@@ -59,29 +59,35 @@ describe('request timeout', () => {
     );
 
     vi.useFakeTimers();
-    const pending = ensureSession();
+    let caught: any = null;
+    const pending = ensureSession().catch((err: unknown) => {
+      caught = err;
+    });
     // Fail the assertion rather than the suite if the budget is ever removed.
     await vi.advanceTimersByTimeAsync(46_000);
+    await pending;
 
-    await expect(pending).rejects.toBeInstanceOf(ApiError);
-    await pending.catch((err: ApiError) => {
-      expect(err.code).toBe('REQUEST_TIMEOUT');
-      expect(err.statusCode).toBe(408);
-      // Retryable, so the caller's existing retry path handles it.
-      expect(err.retryable).toBe(true);
-      // The reader is told their document survived, not shown an internal name.
-      expect(err.message).toMatch(/still here/i);
-      expect(err.message).not.toMatch(/abort|signal|controller/i);
-    });
+    expect(caught).toBeInstanceOf(ApiError);
+    const apiErr = caught as ApiError;
+    expect(apiErr.code).toBe('REQUEST_TIMEOUT');
+    expect(apiErr.statusCode).toBe(408);
+    // Retryable, so the caller's existing retry path handles it.
+    expect(apiErr.retryable).toBe(true);
+    // The reader is told their document survived, not shown an internal name.
+    expect(apiErr.message).toMatch(/still here/i);
+    expect(apiErr.message).not.toMatch(/abort|signal|controller/i);
   });
 
   it('reports an unreachable server as a typed network error, not a timeout', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))));
 
-    await expect(ensureSession()).rejects.toBeInstanceOf(ApiError);
-    await ensureSession().catch((err: ApiError) => {
-      expect(err.code).toBe('NETWORK_ERROR');
-      expect(err.retryable).toBe(true);
+    let caught: any = null;
+    await ensureSession().catch((err: unknown) => {
+      caught = err;
     });
+    expect(caught).toBeInstanceOf(ApiError);
+    const apiErr = caught as ApiError;
+    expect(apiErr.code).toBe('NETWORK_ERROR');
+    expect(apiErr.retryable).toBe(true);
   });
 });

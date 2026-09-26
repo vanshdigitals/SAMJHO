@@ -45,9 +45,10 @@ export function HelpPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ['briefing', id],
+    queryKey: ['analysis', id],
     queryFn: () => getAnalysis(id),
     enabled: !isSample,
+    staleTime: 5 * 60 * 1000,
     retry: 2,
     refetchInterval: (query) => {
       const result = query.state.data;

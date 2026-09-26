@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import io
 import os
@@ -196,7 +197,7 @@ class DocumentExtractionService:
                 injection_flags.extend(res.get("injection_flags", []))
 
             elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                res = self._extract_docx(temp_file_path)
+                res = await asyncio.to_thread(self._extract_docx, temp_file_path)
                 pages_data = res["pages"]
                 full_text = res["full_text"]
 
@@ -272,65 +273,73 @@ class DocumentExtractionService:
                 except Exception:
                     pass
 
-    async def _extract_pdf(self, file_path: str, raw_bytes: bytes) -> dict[str, Any]:
+    def _extract_pdf_sync(self, file_path: str) -> tuple[str, list[dict], list[str]]:
         doc = fitz.open(file_path)
         pages_data = []
         full_text_pieces = []
         current_offset = 0
         injection_flags = []
 
-        for p_idx in range(doc.page_count):
-            page = doc[p_idx]
-            page_text = ""
-            rect = page.rect
+        try:
+            for p_idx in range(doc.page_count):
+                page = doc[p_idx]
+                page_text = ""
+                rect = page.rect
 
-            # Inspect text spans for near-zero font, white-on-white, off-mediabox
-            blocks = page.get_text("dict").get("blocks", [])
-            for b in blocks:
-                if b.get("type") == 0:  # text block
-                    for line in b.get("lines", []):
-                        for span in line.get("spans", []):
-                            txt = span.get("text", "")
-                            bbox = fitz.Rect(span.get("bbox", (0, 0, 0, 0)))
-                            size = span.get("size", 10.0)
-                            color = span.get("color", 0)
+                # Inspect text spans for near-zero font, white-on-white, off-mediabox
+                blocks = page.get_text("dict").get("blocks", [])
+                for b in blocks:
+                    if b.get("type") == 0:  # text block
+                        for line in b.get("lines", []):
+                            for span in line.get("spans", []):
+                                txt = span.get("text", "")
+                                bbox = fitz.Rect(span.get("bbox", (0, 0, 0, 0)))
+                                size = span.get("size", 10.0)
+                                color = span.get("color", 0)
 
-                            # Near-zero font size
-                            if size < 1.0 and txt.strip():
-                                if "near_zero_font_size" not in injection_flags:
-                                    injection_flags.append("near_zero_font_size")
-                                continue
+                                # Near-zero font size
+                                if size < 1.0 and txt.strip():
+                                    if "near_zero_font_size" not in injection_flags:
+                                        injection_flags.append("near_zero_font_size")
+                                    continue
 
-                            # White on white (RGB = 16777215 or 0xFFFFFF)
-                            if color in (16777215, 0xFFFFFF) and txt.strip():
-                                if "white_on_white_text" not in injection_flags:
-                                    injection_flags.append("white_on_white_text")
-                                continue
+                                # White on white (RGB = 16777215 or 0xFFFFFF)
+                                if color in (16777215, 0xFFFFFF) and txt.strip():
+                                    if "white_on_white_text" not in injection_flags:
+                                        injection_flags.append("white_on_white_text")
+                                    continue
 
-                            # Off-mediabox text
-                            if not rect.intersects(bbox) and txt.strip():
-                                if "off_mediabox_text" not in injection_flags:
-                                    injection_flags.append("off_mediabox_text")
-                                continue
+                                # Off-mediabox text
+                                if not rect.intersects(bbox) and txt.strip():
+                                    if "off_mediabox_text" not in injection_flags:
+                                        injection_flags.append("off_mediabox_text")
+                                    continue
 
-                            page_text += txt + " "
-                    page_text += "\n"
+                                page_text += txt + " "
+                        page_text += "\n"
 
-            cleaned_page = self._sanitize_text(page_text)
-            if len(cleaned_page.strip()) > 0:
-                p_len = len(cleaned_page)
-                pages_data.append({
-                    "page_number": p_idx + 1,
-                    "char_start": current_offset,
-                    "char_end": current_offset + p_len,
-                    "text": cleaned_page,
-                })
-                current_offset += p_len + 1  # account for page separation
-                full_text_pieces.append(cleaned_page)
-
-        doc.close()
+                cleaned_page = self._sanitize_text(page_text)
+                if len(cleaned_page.strip()) > 0:
+                    p_len = len(cleaned_page)
+                    pages_data.append({
+                        "page_number": p_idx + 1,
+                        "char_start": current_offset,
+                        "char_end": current_offset + p_len,
+                        "text": cleaned_page,
+                    })
+                    current_offset += p_len + 1  # account for page separation
+                    full_text_pieces.append(cleaned_page)
+        finally:
+            doc.close()
 
         full_extracted = "\n".join(full_text_pieces)
+        return full_extracted, pages_data, injection_flags
+
+    async def _extract_pdf(self, file_path: str, raw_bytes: bytes) -> dict[str, Any]:
+        # Offload synchronous PyMuPDF dict parsing to worker thread to avoid blocking event loop
+        full_extracted, pages_data, injection_flags = await asyncio.to_thread(
+            self._extract_pdf_sync, file_path
+        )
 
         # Scanned PDF check: if very little text across pages, fallback to OCR
         ocr_used = False

@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.orm import Session
 
 from backend.app.core.errors import SamjoError
@@ -120,19 +120,19 @@ class AnalysisService:
                 extra={"extra_data": {"event": "pipeline_error", "error_type": type(e).__name__}},
             )
             # Update job to failed
-            stmt = select(JobModel).where(JobModel.id == job_id)
-            job = db.execute(stmt).scalar_one_or_none()
-            if job:
-                job.status = "failed"
-                job.error_code = getattr(e, "code", "PROCESSING_FAILED")
-                # Only approved copy is persisted. str(e) on a provider
-                # exception carries the vendor's own wording, which would
-                # then be served straight to the reader.
-                job.error_message = getattr(e, "message", None) or (
-                    "Samjo couldn't finish the briefing. Your file is still here. Try again."
+            db.execute(
+                update(JobModel)
+                .where(JobModel.id == job_id)
+                .values(
+                    status="failed",
+                    error_code=getattr(e, "code", "PROCESSING_FAILED"),
+                    error_message=getattr(e, "message", None) or (
+                        "Samjo couldn't finish the briefing. Your file is still here. Try again."
+                    ),
+                    updated_at=datetime.now(timezone.utc),
                 )
-                job.updated_at = datetime.now(timezone.utc)
-                db.commit()
+            )
+            db.commit()
         finally:
             rate_limiter.release_concurrency(session_id)
             db.close()
@@ -146,11 +146,12 @@ class AnalysisService:
         language: str = "en",
     ) -> None:
         def update_stage(stage_name: str):
-            stmt = select(JobModel).where(JobModel.id == job_id)
-            j = db.execute(stmt).scalar_one_or_none()
-            if j:
-                j.stage = stage_name
-                db.commit()
+            db.execute(
+                update(JobModel)
+                .where(JobModel.id == job_id)
+                .values(stage=stage_name, updated_at=datetime.now(timezone.utc))
+            )
+            db.commit()
 
         # Step 1: extracting
         update_stage("extracting")
@@ -200,13 +201,16 @@ class AnalysisService:
         self._persist_analysis(db, document_id, session_id, verified_analysis)
 
         # Mark job complete
-        stmt = select(JobModel).where(JobModel.id == job_id)
-        job = db.execute(stmt).scalar_one_or_none()
-        if job:
-            job.status = "complete"
-            job.stage = "complete"
-            job.updated_at = datetime.now(timezone.utc)
-            db.commit()
+        db.execute(
+            update(JobModel)
+            .where(JobModel.id == job_id)
+            .values(
+                status="complete",
+                stage="complete",
+                updated_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
 
         logger.info(
             "Pipeline successfully completed",

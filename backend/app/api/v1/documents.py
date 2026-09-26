@@ -84,12 +84,14 @@ async def get_document_metadata(
     db: Session = Depends(get_db),
 ):
     doc = document_service.get_document_with_ownership_check(db, document_id, session.id)
-    doc_text, extraction = document_service.get_decrypted_document_text(db, document_id)
     ocr_low_conf = bool(
         doc.ocr_used
         and doc.ocr_confidence is not None
         and doc.ocr_confidence < settings.OCR_MIN_CONFIDENCE
     )
+    doc_text = None
+    if ocr_low_conf:
+        doc_text, _ = document_service.get_decrypted_document_text(db, document_id)
 
     return DocumentMetadataResponse(
         document_id=str(doc.id),
@@ -99,7 +101,7 @@ async def get_document_metadata(
         ocr_used=doc.ocr_used,
         ocr_confidence=doc.ocr_confidence,
         ocr_low_confidence=ocr_low_conf,
-        extracted_text=doc_text if ocr_low_conf else None,
+        extracted_text=doc_text,
         delete_after=doc.delete_after,
     )
 

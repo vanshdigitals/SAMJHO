@@ -42,9 +42,10 @@ export function ProcessingPage() {
 
   // Real document polling at 1.5s
   const { data, error, refetch } = useQuery({
-    queryKey: ['analysis-poll', id],
+    queryKey: ['analysis', id],
     queryFn: () => getAnalysis(id),
     enabled: !isSample,
+    staleTime: 5 * 60 * 1000,
     // Bounded. A poll that cannot parse its own answer must not retry for ever.
     retry: 2,
     // A reader who switches tabs during a minute-long analysis must not come

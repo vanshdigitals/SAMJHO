@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertIcon,
   CalendarIcon,
@@ -59,6 +59,7 @@ const SECTIONS = [
 
 export function BriefingPage() {
   const { id = 'sample' } = useParams();
+  const queryClient = useQueryClient();
   const hasEvidencePane = useMediaQuery('(min-width: 1280px)');
   const isWide = useMediaQuery('(min-width: 1024px)');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -74,9 +75,10 @@ export function BriefingPage() {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ['briefing', id],
+    queryKey: ['analysis', id],
     queryFn: () => getAnalysis(id),
     enabled: !isSample,
+    staleTime: 5 * 60 * 1000,
     retry: 2,
     /* Unlike the processing screen, this route is only ever still polling
        because the reader arrived at the briefing before the analysis finished.
@@ -123,11 +125,13 @@ export function BriefingPage() {
       if (!isSample) {
         markDocumentDeleted(id);
         await deleteDocument(id);
+        queryClient.removeQueries({ queryKey: ['analysis', id] });
       }
     } catch {
       // Ignored
     } finally {
       markDocumentDeleted(id);
+      queryClient.removeQueries({ queryKey: ['analysis', id] });
       setDeleted(true);
     }
   }
