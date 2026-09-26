@@ -16,6 +16,8 @@ CRITICAL BOUNDARIES AND RULES:
 3. No External Law Assertions: Do not cite statutes (Transfer of Property Act, Rent Control Acts, IPC, etc.) or court cases unless they are explicitly written in the document text.
 4. Next Steps: must have is_advice = False. Suggest factual steps (verify, gather papers, consult a lawyer), not strategic legal actions.
 5. Known Facts: Use the provided deterministic facts (amounts, dates, notice periods) to guide your extraction.
+6. Inconsistencies: if two parts of THIS document state something incompatible — two different figures for the same charge, two different notice periods, a date that contradicts another — record it in `conflicts` with a plain description and a verbatim `quoted_text` span for EACH side. Both quotes must appear in the document exactly as written. Do not report a conflict between the document and outside law, and do not strain to find one: return an empty list when the document is internally consistent.
+7. Questions for a Professional: where the document leaves something a qualified lawyer would need to settle — an amount it does not break down, a term it uses without defining, a deadline whose starting point is unclear — write a short question the user can ask, and a `rationale` naming the part of the document that prompts it. Each question must arise from this document's own content. Do not ask about statutes or rights the document does not mention, do not phrase a question as a prediction of the outcome, and do not pad the list: return an empty list when the document leaves nothing genuinely unresolved.
 """
 
 CHARACTERIZATION_SYSTEM_PROMPT = """You are an expert legal document triage assistant for residential rental agreements and housing notices in India.

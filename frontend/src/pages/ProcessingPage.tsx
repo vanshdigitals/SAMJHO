@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertIcon, CheckIcon, TimerIcon } from '../components/icons';
 import { Button } from '../components/ui/Button';
 import { PIPELINE_STAGES } from '../lib/sampleBriefing';
-import { getAnalysis, startAnalysis } from '../lib/api';
+import { getAnalysis, pollDelay, startAnalysis } from '../lib/api';
 
 /* /d/:id/processing — UX_FLOWS §1, §2, §6.
    Real stage names, in the order the pipeline runs them, and no percentage.
-   Polled from the backend every 1.5s.
+   Polled from the backend, backing off 1.5s -> 5s (api.pollDelay).
    The backend is the ONLY source of truth for completion. */
 
 const STAGE_MAP: Record<string, number> = {
@@ -56,7 +56,7 @@ export function ProcessingPage() {
         return false;
       }
       if (query.state.status === 'error') return false;
-      return 1500;
+      return pollDelay(query.state.dataUpdateCount);
     },
   });
 

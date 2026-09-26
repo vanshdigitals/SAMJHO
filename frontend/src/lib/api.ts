@@ -4,6 +4,12 @@ const API_BASE =
   (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ||
   '/api/v1';
 
+/* Per-request budget, not per-flow. The longest single call is a 10 MB upload
+   over a slow connection; analysis itself runs in the background and is read
+   by polling, so no request here waits on the model. 45s leaves ample room for
+   the upload and still fails a dead connection while the reader is watching. */
+const REQUEST_TIMEOUT_MS = 45_000;
+
 /* ── Zod Schemas Mirroring Pydantic Contracts (RESOURCE_AUDIT §11) ──────── */
 
 /* These mirror backend/app/schemas/ai.py field for field.
@@ -233,11 +239,42 @@ async function request<T>(
     headers.set('X-Samjo-Session', '1');
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  /* A request that never settles used to hang for as long as the browser let
+     it, holding a connection and leaving the reader on a spinner with nothing
+     to act on. Each attempt gets its own budget and a typed error, so the
+     caller's existing retry and error handling deals with it like any other
+     failure. This bounds one request, not the poll loop: getAnalysis returns
+     in well under a second either way, and a slow analysis is the backend
+     answering 425 quickly, not a request left open. */
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new ApiError(
+        'REQUEST_TIMEOUT',
+        'Samjo could not reach the server in time. Your document is still here — try again.',
+        408,
+        true,
+      );
+    }
+    throw new ApiError(
+      'NETWORK_ERROR',
+      'Samjo could not reach the server. Check your connection and try again.',
+      0,
+      true,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   // Handle empty responses (like 204 No Content)
   if (response.status === 204) {
@@ -337,6 +374,17 @@ export type AnalysisPollResult =
   | { status: 'processing'; stage: JobStatusResponse['stage'] }
   | { status: 'complete'; data: AnalysisResponse }
   | { status: 'failed'; error_code: string; message: string };
+
+/* How long to wait before the next poll, given how many answers have already
+   come back. An analysis takes ~20s, so the first few seconds are where a
+   reader is most likely to be looking and the interval stays short there; past
+   that, a flat 1.5s was spending four database queries a second to learn
+   nothing. Backs off 1.5s → 2s → 3s → 5s and stays at 5s, which bounds a long
+   analysis at roughly a fifth of the requests the flat interval made. */
+export function pollDelay(completedPolls: number): number {
+  const LADDER = [1500, 1500, 2000, 2000, 3000, 3000];
+  return LADDER[completedPolls] ?? 5000;
+}
 
 export async function getAnalysis(documentId: string): Promise<AnalysisPollResult> {
   const url = `${API_BASE}/documents/${documentId}/analysis`;

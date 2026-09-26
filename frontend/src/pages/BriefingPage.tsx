@@ -35,6 +35,7 @@ import {
   deleteDocument,
   getAnalysis,
   getSourceSpan,
+  pollDelay,
   startAnalysis,
   transformAnalysisToBriefing,
 } from '../lib/api';
@@ -77,13 +78,19 @@ export function BriefingPage() {
     queryFn: () => getAnalysis(id),
     enabled: !isSample,
     retry: 2,
+    /* Unlike the processing screen, this route is only ever still polling
+       because the reader arrived at the briefing before the analysis finished.
+       A hidden tab has nothing to show them, so it does not need to keep
+       asking; ProcessingPage keeps background polling because its whole
+       purpose is the progress a reader comes back to. */
+    refetchIntervalInBackground: false,
     refetchInterval: (query) => {
       const result = query.state.data;
       if (result?.status === 'complete' || result?.status === 'failed') {
         return false;
       }
       if (query.state.status === 'error') return false;
-      return 1500;
+      return pollDelay(query.state.dataUpdateCount);
     },
   });
 

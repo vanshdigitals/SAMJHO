@@ -74,3 +74,59 @@ def test_eviction_notice_triggers_high_risk():
     assert safe.professional_help.recommended is True
     # Verify is_advice is forced False
     assert all(not step.is_advice for step in safe.next_steps)
+
+
+def test_prompt_asks_for_grounded_questions_without_licensing_advice():
+    """The questions rule must ask for document-grounded questions only.
+
+    The prompt now instructs the model to produce professional-preparation
+    questions (AI_SCHEMAS `questions[]`), which was why a real notice came back
+    with none. That instruction must not become a licence to speculate: it has
+    to stay bound to the document, refuse outcome prediction, and permit an
+    empty list. This asserts the boundary in the prompt text itself, because a
+    future edit loosening it would not fail any other test.
+    """
+    from backend.app.prompts.v1 import SYSTEM_ANALYSIS_INSTRUCTIONS as prompt
+
+    lowered = prompt.lower()
+
+    # The capability is actually requested.
+    assert "questions for a professional" in lowered
+    assert "rationale" in lowered
+
+    # Grounded in this document, not in outside law.
+    assert "arise from this document's own content" in lowered
+    assert "statutes or rights the document does not mention" in lowered
+
+    # No outcome prediction, and silence is allowed over filler.
+    assert "prediction of the outcome" in lowered
+    assert "empty list" in lowered
+
+    # The pre-existing boundaries are still stated.
+    assert "never provide legal advice" in lowered
+    assert "do not rule on enforceability" in lowered
+
+
+def test_prompt_asks_for_internal_inconsistencies_only():
+    """`conflicts[]` must be document-internal and quoted on both sides.
+
+    The schema has always carried conflicts and the briefing now renders them,
+    but the prompt never asked for them, so a document with contradictory
+    clauses came back with an empty list and the section was unreachable. The
+    instruction that fixes that must stay bounded: a conflict is between two
+    parts of THIS document, never between the document and outside law, and
+    each side needs a verbatim span or evidence verification will drop it.
+    """
+    from backend.app.prompts.v1 import SYSTEM_ANALYSIS_INSTRUCTIONS as prompt
+
+    lowered = prompt.lower()
+
+    assert "inconsistencies" in lowered
+    assert "conflicts" in lowered
+    # Both sides quoted, so the drop rule can verify them.
+    assert "quoted_text` span for each side" in lowered
+    assert "exactly as written" in lowered
+    # Internal only, and silence over a strained finding.
+    assert "two parts of this document" in lowered
+    assert "not report a conflict between the document and outside law" in lowered
+    assert "empty list when the document is internally consistent" in lowered
