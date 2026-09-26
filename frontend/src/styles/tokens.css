@@ -1,0 +1,272 @@
+/* Canonical Samjo tokens — DESIGN_SYSTEM.md §2, §4.
+
+   LIGHT is canonical and its values are unchanged: design/SAMJO_DESIGN_SYSTEM.md §2
+   says do not darken or lighten any of them, and none of them are touched here.
+
+   DARK is an addition and contradicts design/SAMJO_MASTER_STITCH_DESIGN_CONTEXT.md
+   line 63 ("No dark mode in this spec. Light only."). It is added on request.
+   It activates from prefers-color-scheme, with a [data-theme] override so a
+   switcher can be added later without re-tokenising anything. */
+
+:root {
+  /* surfaces */
+  --background:      #F6F3EE;
+  --surface:         #FFFFFF;
+  --surface-subtle:  #EEEAE2;
+
+  /* text */
+  --text-primary:    #131C2B;
+  --text-secondary:  #49566A;
+  --text-muted:      #6E7A8A;
+
+  /* structure */
+  --border:          #DDD6CC;
+  --border-strong:   #C4BBAE;
+
+  /* action — --primary is the brand ramp; --on-primary is the CTA foreground,
+     which is NOT simply white in both themes. --primary-active is the pressed
+     step. No duplicate --action-* aliases: these names already exist. */
+  --primary:         #1B4DB1;
+  --primary-hover:   #163F92;
+  --primary-active:  #123573;
+  --primary-subtle:  #E8EEF9;
+  --on-primary:      #FFFFFF;
+  /* Inset edge that fades in on CTA hover. Direction follows the fill's
+     luminance: a light highlight on a dark fill, a dark one on a light fill. */
+  --action-edge:     rgba(255, 255, 255, 0.18);
+
+  /* semantic */
+  --warning:         #92600A;
+  --warning-surface: #FBF0DC;
+  --danger:          #A32219;
+  --danger-surface:  #FAE9E7;
+  --success:         #1C6244;
+  --success-surface: #E6F1EB;
+
+  /* focus */
+  --focus-ring:      #1B4DB1;
+
+  /* spacing */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;  --space-6: 24px;  --space-8: 32px;  --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+
+  /* radius — assigned by role, not applied uniformly */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* elevation — only for things that genuinely float */
+  --shadow-subtle: 0 1px 2px rgba(19, 28, 43, 0.06);
+  --shadow-medium: 0 8px 24px rgba(19, 28, 43, 0.10);
+
+  /* header system — NEW tokens, see report */
+  --header-height-mobile:  56px;
+  --header-height-desktop: 64px;   /* tablet 768-1023 */
+  --header-height-lg:      88px;   /* 1024+ */
+  --header-shell-width:    1440px; /* wide container for desktop; content uses available desktop width */
+  --nav-panel-width-max:   340px;
+  --scrim: rgba(19, 28, 43, 0.32);
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+/* Anchored sections land below the sticky header, not behind it. The step
+   matches the header's own breakpoints exactly. */
+section[id] { scroll-margin-top: calc(var(--header-height-mobile) + 12px); }
+@media (min-width: 768px) {
+  section[id] { scroll-margin-top: calc(var(--header-height-desktop) + 16px); }
+}
+@media (min-width: 1024px) {
+  section[id] { scroll-margin-top: calc(var(--header-height-lg) + 16px); }
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Devanagari needs the vertical room — DESIGN_SYSTEM.md §3 */
+[lang='hi'] { line-height: calc(1em + 4px); }
+
+/* Focus is never suppressed for keyboard users — ACCESSIBILITY.md §1. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Modality gate.
+
+   Radix restores focus to a menu's trigger when the menu closes. Chrome then
+   paints :focus-visible on that trigger even when the menu was opened with a
+   mouse, because focus-visible propagates out of the menu items (which are
+   keyboard-navigable by definition). The result is a focus ring that looks
+   stuck on the language button after a pure mouse interaction.
+
+   This is NOT a blanket `outline: none`. The ring is suppressed only while the
+   last input the user actually made was a pointer. The first Tab, arrow key or
+   Enter flips data-modality back to "keyboard" and every ring returns. */
+html[data-modality='pointer'] :focus-visible {
+  outline: none;
+}
+
+/* Theme swap: a short, scoped transition applied only for the duration of a
+   toggle, so surfaces cross-fade instead of snapping. A permanent transition
+   on * would tax every unrelated repaint. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: background-color 180ms ease, color 180ms ease,
+              border-color 180ms ease, fill 180ms ease, stroke 180ms ease !important;
+}
+
+/* Reduced motion: opacity only, no transforms — DESIGN_SYSTEM.md §7 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 100ms !important;
+  }
+  [data-motion='transform'] { transform: none !important; }
+}
+
+/* Panel motion — subtle and fast. Disabled by the reduced-motion block above. */
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slide-in { from { transform: translateX(100%) } to { transform: translateX(0) } }
+
+/* Modern minimal editorial scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(19, 28, 43, 0.18) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(19, 28, 43, 0.18);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(19, 28, 43, 0.35);
+}
+
+/* ── Dark theme ───────────────────────────────────────────────────────────
+   Not an inversion. Light is warm paper with cool ink; dark is cool ink
+   ground with warm paper text, so the warmth travels with the content and
+   the brand hue is preserved rather than neutralised.
+
+   Ground is the ink navy family (#0F1622), never pure black.
+   Text is warm off-white (#EDEAE4), echoing the light --background, because
+   pure white on dark ink glares.
+   Action lightens the SAME hue (219°) rather than shifting it: #1B4DB1 is
+   hsl(219 73% 40%); the dark action is hsl(219 82% 72%). Saturation is held
+   below neon and the foreground flips to dark ink, which is what keeps
+   contrast high without a glow.
+   ──────────────────────────────────────────────────────────────────────── */
+:root[data-theme='dark'] {
+  --background:      #0F1622;
+  --surface:         #161F2D;
+  --surface-subtle:  #1E2836;
+
+  --text-primary:    #EDEAE4;
+  --text-secondary:  #B4BDC9;
+  --text-muted:      #8895A6;
+
+  --border:          #26303F;
+  --border-strong:   #3A4657;
+
+  --primary:         #7BA4F5;
+  --primary-hover:   #97B8F8;
+  --primary-active:  #6994EC;
+  --primary-subtle:  #1C2942;
+  --on-primary:      #0F1622;
+  --action-edge:     rgba(15, 22, 34, 0.16);
+
+  --warning:         #E8B863;  --warning-surface: #2E2517;
+  --danger:          #F09088;  --danger-surface:  #2E1A19;
+  --success:         #6FC79C;  --success-surface: #15291F;
+
+  --focus-ring:      #7BA4F5;
+
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --scrim: rgba(6, 10, 16, 0.58);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --background:      #0F1622;
+    --surface:         #161F2D;
+    --surface-subtle:  #1E2836;
+
+    --text-primary:    #EDEAE4;
+    --text-secondary:  #B4BDC9;
+    --text-muted:      #8895A6;
+
+    --border:          #26303F;
+    --border-strong:   #3A4657;
+
+    --primary:         #7BA4F5;
+    --primary-hover:   #97B8F8;
+    --primary-active:  #6994EC;
+    --primary-subtle:  #1C2942;
+    --on-primary:      #0F1622;
+    --action-edge:     rgba(15, 22, 34, 0.16);
+
+    --warning:         #E8B863;  --warning-surface: #2E2517;
+    --danger:          #F09088;  --danger-surface:  #2E1A19;
+    --success:         #6FC79C;  --success-surface: #15291F;
+
+    --focus-ring:      #7BA4F5;
+
+    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --scrim: rgba(6, 10, 16, 0.58);
+  }
+}
+
+/* Menu entrance — restrained: opacity + 4px rise, no scale, no bounce.
+   Disabled by the prefers-reduced-motion block above. */
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero entrance — one orchestrated moment, first load only (DESIGN_SYSTEM §7).
+   Opacity plus a small rise; the reduced-motion block above collapses it. */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-rise > * {
+  animation: hero-rise 420ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+.hero-rise > *:nth-child(1) { animation-delay: 0ms }
+.hero-rise > *:nth-child(2) { animation-delay: 40ms }
+.hero-rise > *:nth-child(3) { animation-delay: 80ms }
+.hero-rise > *:nth-child(4) { animation-delay: 120ms }
+.hero-rise > *:nth-child(5) { animation-delay: 160ms }
+.hero-rise > *:nth-child(6) { animation-delay: 200ms }
+
+/* Section entrance — one fade-and-rise per surface, not per element.
+   Collapsed by the prefers-reduced-motion block above. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: rise-in 300ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
+.rise-in-delayed { animation: rise-in 300ms cubic-bezier(0.22, 0.61, 0.36, 1) 90ms backwards; }

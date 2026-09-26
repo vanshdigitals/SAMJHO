@@ -1,0 +1,47 @@
+# Build context is the repository root; the image only needs backend/ and
+# alembic.ini. Everything below either belongs to the frontend, is a secret,
+# or is local state that must never reach an image.
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Frontend — deployed separately as a static build
+frontend/
+
+# Local databases and in-flight uploads
+*.db
+*.db-journal
+*.sqlite3
+var/
+
+# Python build and cache artefacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Tests and fixtures are not needed at runtime
+backend/tests/
+fixtures/
+
+# Specs, tooling and VCS
+*.md
+!README.md
+design/
+.git/
+.gitignore
+.github/
+.claude/
+.vscode/
+.idea/

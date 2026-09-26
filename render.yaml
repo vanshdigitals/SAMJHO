@@ -1,0 +1,141 @@
+# SAMJO backend on Render — native Python runtime, no Docker.
+#
+# Two constraints shape this file, both verified against Render's docs:
+#
+# 1. Native runtimes cannot install system packages. Render: "To use a tool
+#    that isn't included in Render's native runtimes ... deploy with Docker
+#    instead." Tesseract is an apt package, so OCR has no engine here.
+#    Digital PDFs and DOCX are unaffected; images and scanned PDFs return the
+#    typed OCR_UNAVAILABLE error the frontend already renders. That is the
+#    price of not using Docker, and it is a deliberate trade, not an oversight.
+#
+# 2. `preDeployCommand` is paid-only: "The pre-deploy command is available for
+#    paid web services, private services, and background workers." On the free
+#    plan migrations therefore run in the start command. The free plan runs a
+#    single instance, so there is no second instance to race; on a paid plan,
+#    move `alembic upgrade head` into preDeployCommand and drop it from here.
+#
+# Secrets are NOT in this file. Every value marked `sync: false` is entered in
+# the Render dashboard, which is the only place it should exist.
+
+services:
+  - type: web
+    name: samjo-api
+    runtime: python
+    plan: free
+    region: singapore
+    healthCheckPath: /api/v1/health
+
+    # Both commands run from the repository root, which is also the import
+    # root — the app imports itself as `backend.app.*`, and alembic.ini
+    # resolves `script_location = %(here)s/backend/alembic` from here.
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: alembic upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      # Pinned so a Render default change cannot alter the runtime underneath
+      # a working deploy.
+      - key: PYTHON_VERSION
+        value: "3.12"
+
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+
+      # Supabase connection URI, pasted unedited. The app rewrites the scheme
+      # to the installed driver in config.sqlalchemy_url, so a plain
+      # postgresql:// URI resolves to psycopg 3 without hand-editing.
+      - key: DATABASE_URL
+        sync: false
+
+      # Comma-separated, exact origins. Never a wildcard — the session cookie
+      # is sent with credentials, and a wildcard would be rejected anyway.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: API_BASE_URL
+        sync: false
+
+      - key: SESSION_SIGNING_KEY
+        generateValue: true
+      # Must be a Fernet key, NOT token_urlsafe:
+      #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: ENCRYPTION_KEY
+        sync: false
+
+      # Groq is primary: its Services Agreement §4.2 forbids training on
+      # Inputs or Outputs on every tier, so real documents are permitted
+      # without a paid plan.
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+
+      # Gemini stays configured but unreached while LLM_FALLBACK_PROVIDER is
+      # empty. Its unpaid tier trains on submitted content, which is why
+      # GEMINI_BILLING_CONFIRMED must be true before it is ever used
+      # (RESOURCE_AUDIT §0.1).
+      - key: LLM_MODEL
+        value: gemini-3.8-flash
+      - key: CHARACTERIZATION_MODEL
+        value: gemini-3.8-flash
+      - key: LLM_API_KEY
+        sync: false
+      - key: GEMINI_BILLING_CONFIRMED
+        value: "true"
+      # Empty disables failover. Set to "gemini" only once billing is on.
+      - key: LLM_FALLBACK_PROVIDER
+        sync: false
+
+      - key: LLM_THINKING_LEVEL
+        value: low
+      - key: LLM_TIMEOUT_SECONDS
+        value: "90"
+      - key: LLM_MAX_OUTPUT_TOKENS
+        value: "8000"
+      - key: LLM_TEMPERATURE
+        value: "0"
+      - key: LLM_MAX_RETRIES
+        value: "1"
+
+      # Ingestion limits (PRD §9.1)
+      - key: MAX_UPLOAD_BYTES
+        value: "10485760"
+      - key: MAX_PAGE_COUNT
+        value: "30"
+      - key: MAX_EXTRACTION_CHARS
+        value: "120000"
+      # Relative to the working directory, which is the repo root on the
+      # native runtime. Uploads are deleted as soon as extraction finishes,
+      # so the ephemeral filesystem is not a problem.
+      - key: UPLOAD_TMP_DIR
+        value: ./var/uploads
+
+      # Left enabled so behaviour follows the actual capability probe rather
+      # than a flag: if this service later moves to Docker, OCR starts working
+      # with no config change. Until then the probe reports no engine and
+      # images fail with OCR_UNAVAILABLE rather than a wrong answer.
+      - key: OCR_ENABLED
+        value: "true"
+      - key: OCR_MIN_CONFIDENCE
+        value: "0.60"
+      - key: OCR_TIMEOUT_SECONDS
+        value: "30"
+      - key: OCR_LANGUAGES
+        value: hin+eng
+
+      # Retention (PRD §9.9)
+      - key: DOCUMENT_TTL_HOURS
+        value: "24"
+      - key: SESSION_TTL_HOURS
+        value: "72"
+
+      # Rate limits (RESOURCE_AUDIT §21)
+      - key: RATE_LIMIT_UPLOADS_PER_HOUR
+        value: "10"
+      - key: RATE_LIMIT_ANALYSES_PER_HOUR
+        value: "15"
+      - key: RATE_LIMIT_SITUATIONS_PER_HOUR
+        value: "10"
