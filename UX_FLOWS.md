@@ -12,7 +12,6 @@ Forty-three screen concepts do not become forty-three routes. Most are **states*
 | `/d/:id/processing` | Reading, characterizing, analyzing, failed, partial |
 | `/d/:id` | Briefing with all sections, evidence drawer, urgency, low-confidence, empty |
 | `/d/:id/help` | Professional help, lawyer preparation |
-| `/d/:id/export` | Export preview and download |
 | `/situation` | Intake, questions, summary, missing info, next steps, escalation |
 | `/privacy`, `/safety`, `/accessibility` | Static policy surfaces |
 

@@ -72,7 +72,6 @@ class Settings(BaseSettings):
     RATE_LIMIT_UPLOADS_PER_HOUR: int = 10
     RATE_LIMIT_ANALYSES_PER_HOUR: int = 15
     RATE_LIMIT_SITUATIONS_PER_HOUR: int = 10
-    RATE_LIMIT_QUESTIONS_PER_HOUR: int = 40  # Unused - C3 blocked pending decision
 
     # Security Keys
     SESSION_SIGNING_KEY: str = "dev-insecure-session-signing-key-for-local-development-only"

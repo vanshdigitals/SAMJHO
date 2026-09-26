@@ -529,10 +529,31 @@ export function transformAnalysisToBriefing(analysis: AnalysisResponse, deleteAf
       if (q.rationale) acc[q.text] = q.rationale;
       return acc;
     }, {}),
-    nextSteps:
-      analysis.next_steps.length > 0
-        ? analysis.next_steps.map((step) => step.step).join(' ')
-        : 'Prepare your response in writing and consult a legal professional if needed.',
+    /* The analysis returns a list; it reaches the reader as a list. Joining
+       these into one paragraph threw away the ordering and the per-step
+       classification the model had already made. Nothing is substituted when
+       the list is empty — an empty list renders no section, rather than a
+       generic sentence Samjo made up. */
+    nextSteps: analysis.next_steps.map((step) => ({
+      id: step.id,
+      step: step.step,
+      type: step.type,
+      isAdvice: step.is_advice,
+    })),
+
+    /* Conflicts were being validated and then dropped before the screen.
+       Each one keeps the document's own words on both sides, and its
+       source_id, so a claim about a contradiction stays traceable. */
+    conflicts: analysis.conflicts.map((conflict) => ({
+      id: conflict.id,
+      description: conflict.description,
+      note: conflict.note,
+      spans: conflict.spans.map((span) => ({
+        quote: span.quoted_text,
+        page: span.page,
+        sourceId: span.source_id ?? undefined,
+      })),
+    })),
     uncertainty: analysis.uncertainty,
     sourceMetadata: {
       pageCount: analysis.source_metadata.page_count,

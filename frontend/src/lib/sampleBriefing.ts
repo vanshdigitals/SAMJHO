@@ -47,6 +47,28 @@ export type DetailItem = {
   evidence?: Evidence;
 };
 
+/* AI_SCHEMAS `AnalysisResponse.next_steps[]`, kept as the list the analysis
+   actually returns rather than collapsed into a paragraph. `type` and
+   `isAdvice` come straight from the model's own classification: AI_SAFETY
+   requires a step that would be advice to be marked, not silently rendered
+   beside factual ones. Nothing here is generated in the browser. */
+export type NextStep = {
+  id: string;
+  step: string;
+  type: string;
+  isAdvice: boolean;
+};
+
+/* A conflict the analysis found between two parts of the same document —
+   AI_SCHEMAS `AnalysisResponse.conflicts[]`. It has no title; the description
+   is the claim and the spans are the document's own words on both sides. */
+export type Conflict = {
+  id: string;
+  description: string;
+  note: string;
+  spans: Array<{ quote: string; page: number; sourceId?: string }>;
+};
+
 export type Briefing = {
   id: string;
   fileName: string;
@@ -69,7 +91,8 @@ export type Briefing = {
   dates: DetailItem[];
   questions: string[];
   questionRationales?: Record<string, string>;
-  nextSteps: string;
+  nextSteps: NextStep[];
+  conflicts: Conflict[];
   uncertainty: string[];
   sourceMetadata: {
     pageCount: number;
@@ -208,8 +231,29 @@ export const SAMPLE: Briefing = {
     'What happens if I dispute the amount and stay past the notice period?',
   ],
 
-  nextSteps:
-    'Prepare your response in writing, and take the notice and your agreement to a legal professional if you are unsure.',
+  /* The same two actions the paragraph used to run together, kept apart so
+     each one can be read, counted and acted on separately. */
+  nextSteps: [
+    {
+      id: 'ns-1',
+      step: 'Prepare your response in writing.',
+      type: 'prepare',
+      isAdvice: false,
+    },
+    {
+      id: 'ns-2',
+      step: 'Take the notice and your agreement to a legal professional if you are unsure.',
+      type: 'see_professional',
+      isAdvice: false,
+    },
+  ],
+
+  /* Empty on purpose. This synthetic notice contains no two clauses that
+     contradict each other, and inventing one so the section has something to
+     show would be the exact fabrication the drop rule exists to prevent. The
+     section renders only when a real analysis returns conflicts;
+     fixtures/05_contradictory_clauses.pdf is the document that exercises it. */
+  conflicts: [],
 
   /* AI_SCHEMAS `AnalysisResponse.uncertainty[]` — AI_SAFETY §4 requires
      missing context to be named rather than smoothed over. */

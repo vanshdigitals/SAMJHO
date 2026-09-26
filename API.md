@@ -1,6 +1,8 @@
 # Samjo: API Contracts
 
-Base path `/api/v1`. JSON throughout except upload (multipart) and export (PDF). Authentication is a signed, httpOnly session cookie issued by `POST /sessions`. Every document route enforces ownership in the service layer and returns 404 rather than 403 when ownership fails.
+Base path `/api/v1`. JSON throughout except upload, which is multipart. Authentication is a signed, httpOnly session cookie issued by `POST /sessions`. Every document route enforces ownership in the service layer and returns 404 rather than 403 when ownership fails.
+
+Every route below is implemented and served in production. There is no documented endpoint that the running service does not answer.
 
 ## Conventions
 
@@ -138,17 +140,6 @@ Response 200:
   "professional_help": { "recommended": true, "reason": "..." },
   "disclaimer": "..." }
 ```
-
----
-
-## POST /documents/{document_id}/export
-
-Renders the briefing as a PDF.
-
-Request: `{ "language": "en" | "hi", "include_sources": true }`
-Response 200: `application/pdf`.
-
-The document is stamped "AI-generated information for understanding purposes. Not legal advice." and is styled to not resemble an official instrument: no seal, no letterhead, no signature block.
 
 ---
 

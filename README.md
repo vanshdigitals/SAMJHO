@@ -1,11 +1,90 @@
-# Samjo
+# Samjo — AI for Legal Assistance & Access
 
 **Samajh aane tak.**
 Know where you stand.
 
+**Live:** https://samjho-legal-ai.vercel.app · **API health:** https://samjho.onrender.com/api/v1/health
+
 Samjo is an India-first AI system that helps ordinary people understand legal documents and legal situations. It answers four questions: what is this, what matters in it, is anything urgent, and what do I do next.
 
 Samjo is not a lawyer and does not replace one. It provides legal information, document orientation, source-grounded explanation, and next-step guidance.
+
+**Chosen vertical: residential tenancy.** Rental agreements and housing notices in India — a notice to vacate, a rent demand, a lease a tenant is about to sign. One vertical, designed around one persona: a tenant or small landlord with no lawyer, a document they did not draft, and often a clock already running. Narrow scope is deliberate. The deterministic amount, date and notice-period extraction, the urgency rules and the plain-language register are all tuned to this document family, and would be weaker if spread across every kind of contract.
+
+## What it does
+
+1. **Reads the document** — PDF, DOCX or a photo. Tells you what kind of document it is, and how sure it is.
+2. **Says what it is, in plain language** — a source-grounded briefing in eight fixed sections, not a summary.
+3. **Names your obligations** — what the document requires, of whom.
+4. **Flags risks** — clauses worth attention before you sign or reply.
+5. **Pulls out the money** — amounts, deposits, interest, charges, each traced to the sentence it came from.
+6. **Pulls out the deadlines** — dates that matter, and what is time-sensitive.
+7. **Surfaces inconsistencies** — where two parts of the same document appear to say different things.
+8. **Gives you next steps** — a structured, ordered list of factual steps, never legal strategy.
+9. **Prepares you for a professional** — questions to ask a qualified lawyer, with the reason each one matters.
+10. **Shows its evidence** — every substantive claim opens the exact quoted sentence, its page, and its surrounding context.
+11. **Keeps the boundary** — legal information, never legal advice.
+12. **Works without a document too** — a situation-first intake for people who have a problem but nothing to upload.
+
+### How it maps to the challenge
+
+| Challenge capability | Samjo implementation | Status |
+|---|---|---|
+| Simplify complex legal documents | Source-grounded briefing, `ai_interpretation` per item | Implemented |
+| Highlight important clauses | Obligations, Watch out, Important details | Implemented |
+| Identify obligations | `obligations[]` — "What you need to do" | Implemented |
+| Identify risks | `risks[]` — "Watch out" | Implemented |
+| Identify inconsistencies | `conflicts[]` — "Potential inconsistencies" | Implemented |
+| Identify deadlines | `deadlines[]` — "Dates that matter" + urgency | Implemented |
+| Understand options and next steps | `next_steps[]` — ordered actionable list | Implemented |
+| Generate summaries / actionable outputs | Eight-section briefing, structured next steps | Implemented |
+| Prepare questions for a legal professional | `questions[]` — "Questions to ask" + `/d/:id/help` | Implemented |
+| Source traceability | Evidence panel: quote, page, context, `/source/{id}` | Implemented |
+| Information, not advice | Server-enforced disclaimer, advice-shaped output refused | Implemented |
+| Compare contracts or policies | Not implemented — single-document by design | Not implemented |
+| Answer follow-up questions about a document | Not implemented | Not implemented |
+
+The last two are listed in the challenge as *potential* directions. Samjo does not implement them, and does not claim to.
+
+## Approach and logic
+
+```
+upload or situation
+  → extraction (PyMuPDF / python-docx / OCR)
+  → characterization gate: is this even a legal document, and which kind?
+  → deterministic extraction of amounts, dates, percentages, notice periods
+  → AI analysis against a strict JSON schema
+  → verification: every quote matched back to the extracted text
+  → briefing + evidence
+```
+
+Two decisions do most of the work.
+
+**The characterization gate runs first, on the first 2,000 characters.** A grocery bill or a resume is rejected there, before the expensive full-document call. It costs one extra round trip on a genuine document and saves the large one on everything else.
+
+**Verification is separate from generation.** The model produces a quote; the backend then looks for that quote in the extracted text — exact match first, then a normalisation pass for whitespace and typographic quotes. **There is no fuzzy matching.** A claim whose quote cannot be found is dropped before it reaches the screen, and the count of dropped claims is shown to the reader rather than hidden. The interface never merges the document's words with Samjo's reading:
+
+- **Document says** — the exact quoted text
+- **Samjo interprets** — the plain-language reading
+- **A professional should check** — what a lawyer decides
+
+## Assumptions
+
+- The reader is not a lawyer and has no lawyer yet.
+- The document is one the reader already has, in English or Hindi, under 10 MB and 30 pages.
+- Jurisdiction is assumed to be India and labelled as an assumption, never asserted.
+- A document that fits in one model context — so no retrieval layer is warranted.
+- The reader may be on a phone, on a slow connection, and in a hurry.
+- Anonymous use: no account, no sign-in, no identity.
+
+## Limitations
+
+- **One vertical.** Residential tenancy documents. Other contract types will produce weaker results.
+- **No document comparison and no interactive Q&A.** Neither is implemented.
+- **No PDF export.** There is no export endpoint; the briefing is read in the browser.
+- **OCR does not run in production.** Render's native Python runtime cannot install Tesseract, so images and scanned PDFs return a typed `OCR_UNAVAILABLE`. Digital PDFs and DOCX are unaffected. OCR works locally when Tesseract is installed.
+- **Not legal advice.** Samjo does not predict outcomes, rule on enforceability, or tell anyone what to decide.
+- Analysis quality depends on the model. A claim Samjo cannot ground, it drops — which means a thin briefing is possible, and is preferred over a confident wrong one.
 
 ## The problem
 
@@ -25,7 +104,7 @@ Every substantive claim Samjo makes is tied to a quoted span from the user's own
 |---|---|
 | Frontend | React, TypeScript, Vite, Tailwind CSS |
 | Backend | Python, FastAPI, Pydantic, SQLAlchemy |
-| Database | SQLite for MVP, Postgres-ready |
+| Database | Supabase PostgreSQL in production; SQLite for local development and tests |
 | Documents | PyMuPDF, python-docx, OCR fallback |
 | AI | LLM API behind a provider abstraction, structured outputs |
 
@@ -66,8 +145,8 @@ Python 3.12+, Node 20+, and **Tesseract OCR** with the `eng` and `hin` language 
 
 Tesseract is a native binary, not a pip package. Without it, scans and photos
 fail with a typed `OCR_UNAVAILABLE` rather than a wrong answer — digital PDFs
-and DOCX still work. Deployment installs it in the image (`backend/Dockerfile`),
-so this step is for local development only:
+and DOCX still work. **The deployed backend has no Tesseract** (see Deploying
+below), so this step only enables OCR locally:
 
 ```bash
 # macOS
@@ -149,4 +228,10 @@ paid plan, move `alembic upgrade head` into `preDeployCommand`.
 
 ## Status
 
-Phase 0 complete: specifications. See [TRD, Implementation order](TRD.md#implementation-order) for what lands next.
+**Deployed and running.** The full pipeline — upload, extraction, characterization, AI analysis, evidence verification, briefing, source lookup, delete — works end to end in production against Groq (`openai/gpt-oss-120b`).
+
+- Frontend: https://samjho-legal-ai.vercel.app
+- Backend health: https://samjho.onrender.com/api/v1/health
+- Both test suites run offline with `LLM_PROVIDER=mock` — no key, no network (`pytest` and `cd frontend && npm test`)
+
+Known gaps are listed under [Limitations](#limitations) above. Nothing in this repository documents an endpoint the running service does not answer.

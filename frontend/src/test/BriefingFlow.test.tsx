@@ -600,4 +600,136 @@ describe('Real Document Briefing Flow Invariants', () => {
     expect(api.getSourceSpan).not.toHaveBeenCalled();
     expect(screen.getByText('Document says')).toBeInTheDocument();
   });
+
+  // Test 19: next_steps survives as a list, not a joined paragraph
+  it('renders each next step as its own list item', async () => {
+    vi.mocked(api.getAnalysis).mockResolvedValue({
+      status: 'complete',
+      data: {
+        ...mockRealAnalysis,
+        next_steps: [
+          { id: 'ns-a', step: 'Collect your rent receipts.', type: 'prepare', is_advice: false },
+          { id: 'ns-b', step: 'Ask the society for the parking slip.', type: 'information', is_advice: false },
+          { id: 'ns-c', step: 'Take the agreement to a lawyer.', type: 'see_professional', is_advice: false },
+        ],
+      },
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/d/:id" element={<BriefingPage />} />
+      </Routes>,
+      '/d/real-uuid-1234',
+    );
+
+    const first = await screen.findByText('Collect your rent receipts.');
+    // Each step is a separate <li>, so the three are not one run-on string.
+    expect(first.closest('li')).not.toBeNull();
+    expect(screen.getByText('Ask the society for the parking slip.').closest('li')).not.toBeNull();
+    expect(screen.getByText('Take the agreement to a lawyer.').closest('li')).not.toBeNull();
+    expect(
+      first.closest('li') === screen.getByText('Take the agreement to a lawyer.').closest('li'),
+    ).toBe(false);
+    // Ordered, because the order the analysis returned them in is meaningful.
+    expect(first.closest('ol')).not.toBeNull();
+  });
+
+  // Test 20: conflicts[] reaches the screen with the document's own words
+  it('renders conflicts with their source spans when the analysis returns them', async () => {
+    vi.mocked(api.getAnalysis).mockResolvedValue({
+      status: 'complete',
+      data: {
+        ...mockRealAnalysis,
+        conflicts: [
+          {
+            id: 'cf-1',
+            description: 'The notice period is stated as both 30 days and one month.',
+            note: 'These parts appear to conflict. Worth checking with a professional.',
+            spans: [
+              {
+                source_id: 'src-cf-1a',
+                quoted_text: 'thirty (30) days written notice',
+                page: 1,
+                verified: true,
+              },
+              {
+                source_id: 'src-cf-1b',
+                quoted_text: 'one calendar month of notice',
+                page: 3,
+                verified: true,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/d/:id" element={<BriefingPage />} />
+      </Routes>,
+      '/d/real-uuid-1234',
+    );
+
+    expect(await screen.findByText('Potential inconsistencies')).toBeInTheDocument();
+    expect(
+      screen.getByText('The notice period is stated as both 30 days and one month.'),
+    ).toBeInTheDocument();
+    // Both sides quoted verbatim, each with the page it sits on.
+    expect(screen.getByText(/thirty \(30\) days written notice/)).toBeInTheDocument();
+    expect(screen.getByText(/one calendar month of notice/)).toBeInTheDocument();
+    expect(screen.getByText('Page 1')).toBeInTheDocument();
+    expect(screen.getByText('Page 3')).toBeInTheDocument();
+  });
+
+  // Test 21: an empty conflicts list renders no section at all
+  it('renders no inconsistencies section when conflicts is empty', async () => {
+    vi.mocked(api.getAnalysis).mockResolvedValue({
+      status: 'complete',
+      data: { ...mockRealAnalysis, conflicts: [] },
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/d/:id" element={<BriefingPage />} />
+      </Routes>,
+      '/d/real-uuid-1234',
+    );
+
+    await screen.findByText('Pay maintenance fees directly to society.');
+    expect(screen.queryByText('Potential inconsistencies')).not.toBeInTheDocument();
+  });
+
+  // Test 22: Conflict has no title field — the UI must not invent one.
+  // Guards against a future edit reintroducing `conflict.title`.
+  it('does not render a fabricated conflict title', async () => {
+    const conflict = {
+      id: 'cf-2',
+      description: 'Rent is given as two different amounts.',
+      note: '',
+      spans: [
+        { source_id: 'src-cf-2', quoted_text: 'Rs. 12,000/- per month', page: 1, verified: true },
+      ],
+    };
+    expect('title' in conflict).toBe(false);
+
+    vi.mocked(api.getAnalysis).mockResolvedValue({
+      status: 'complete',
+      data: { ...mockRealAnalysis, conflicts: [conflict] },
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/d/:id" element={<BriefingPage />} />
+      </Routes>,
+      '/d/real-uuid-1234',
+    );
+
+    expect(await screen.findByText('Rent is given as two different amounts.')).toBeInTheDocument();
+    // The description is the only prose; no heading is derived from the conflict.
+    expect(screen.queryByText('conflict-id')).not.toBeInTheDocument();
+    expect(screen.queryByText('undefined')).not.toBeInTheDocument();
+    // An empty note contributes nothing rather than an empty paragraph.
+    expect(screen.queryByText(/Worth checking with a professional/)).not.toBeInTheDocument();
+  });
 });

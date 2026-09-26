@@ -46,10 +46,12 @@ def test_full_document_pipeline_e2e(client, auth_session):
     assert "urgency" in analysis_data
     assert "source_metadata" in analysis_data
 
-    # 4. Verify Export returns 501 Not Implemented
+    # 4. The API surface advertises no capability it cannot serve. Export was
+    #    removed rather than left answering 501, so the route must now be
+    #    absent — not present-but-unimplemented.
     exp_res = client.post(f"/api/v1/documents/{doc_id}/export", headers=headers)
-    assert exp_res.status_code == 501
-    assert exp_res.json()["error_code"] == "NOT_IMPLEMENTED"
+    assert exp_res.status_code == 404
+    assert exp_res.status_code != 501
 
 
 def test_situation_intake_and_analyze_e2e(client, auth_session):

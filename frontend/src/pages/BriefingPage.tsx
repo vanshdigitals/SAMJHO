@@ -13,6 +13,7 @@ import {
 } from '../components/icons';
 import {
   DeletedState,
+  ConflictsBlock,
   GroundingStrip,
   RetentionNotice,
   UncertaintyBlock,
@@ -386,9 +387,28 @@ export function BriefingPage() {
             collapsible={false}
             defaultOpen
           >
-            <p className="m-0 font-sans text-[18px] leading-[1.6] text-ink-secondary">
-              {briefing.nextSteps}
-            </p>
+            {/* The analysis returns an ordered list of steps, so the reader
+                gets an ordered list — a real <ol>, numbered the same way the
+                questions above it are, rather than one run-on paragraph. */}
+            {briefing.nextSteps.length > 0 ? (
+              <ol className="m-0 list-none space-y-4 p-0">
+                {briefing.nextSteps.map((step, i) => (
+                  <li key={step.id} className="flex gap-3.5">
+                    <span className="font-ui text-[13px] font-medium leading-7 tabular-nums text-primary">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="font-sans text-[18px] leading-[1.6] text-ink-secondary">
+                      {step.step}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="m-0 font-sans text-[18px] leading-[1.6] text-ink-secondary">
+                Samjo has no specific step to suggest for this document. A legal professional can
+                tell you what your options are.
+              </p>
+            )}
             <ButtonLink to={`/d/${id}/help`} size="md" className="mt-6">
               Prepare for professional help
             </ButtonLink>
@@ -431,6 +451,8 @@ export function BriefingPage() {
       )}
 
       <div className="max-w-measure lg:ml-[238px] xl:ml-[248px]">
+        <ConflictsBlock items={briefing.conflicts} />
+
         <UncertaintyBlock items={briefing.uncertainty} />
 
         <RetentionNotice

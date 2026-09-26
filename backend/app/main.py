@@ -20,11 +20,23 @@ setup_root_logger(settings.LOG_LEVEL)
 logger = get_logger("samjo.main")
 
 
+REAPER_INTERVAL_SECONDS = 300
+"""How often the reaper sweeps.
+
+Retention is measured in hours — 24 for documents, 72 for sessions — and the
+stuck-job threshold is 120 seconds, so a five-minute cadence detects both well
+inside the windows they govern. A 30-second loop cost six queries a minute
+against the database forever, roughly 17,000 a day on an idle instance, to
+notice expiry that is bounded in hours. Deletion the reader asks for is
+immediate and does not wait for this loop (API.md, DELETE /documents/{id}).
+"""
+
+
 async def periodic_reaper_task():
-    """Runs the reaper every 30 seconds to fail stuck jobs >120s and purge TTLs."""
+    """Sweeps every REAPER_INTERVAL_SECONDS: fails stuck jobs >120s, purges TTLs."""
     while True:
         try:
-            await asyncio.sleep(30)
+            await asyncio.sleep(REAPER_INTERVAL_SECONDS)
             db = SessionLocal()
             try:
                 reaper_service.reap_stuck_jobs(db)

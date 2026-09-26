@@ -2,6 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { ClockIcon, DeleteIcon, SourceCheckIcon, UnclearIcon, WatchOutIcon } from '../icons';
+import type { Conflict } from '../../lib/sampleBriefing';
 
 /* Two things the briefing was not yet saying out loud.
 
@@ -60,6 +61,71 @@ export function GroundingStrip({
         </p>
       )}
     </div>
+  );
+}
+
+/* Parts of the document that appear to contradict each other — AI_SCHEMAS
+   `conflicts[]`. The analysis has always computed these; until now they were
+   validated at the boundary and then dropped before the screen.
+
+   Like UncertaintyBlock, this sits outside the fixed 1–8 section order that
+   UX_FLOWS §4 says is not reorderable and not extendable.
+
+   A Conflict has no title. The description is Samjo's reading and the spans
+   are the document's own words on each side, so the two registers stay apart
+   here exactly as they do in the evidence panel. An empty list renders
+   nothing: a document with no contradiction must not be given one. */
+export function ConflictsBlock({ items }: { items: Conflict[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mt-10 rounded-md border border-hairline bg-surface p-5 sm:p-6">
+      <h2 className="m-0 flex items-center gap-2.5 font-sans text-[18px] font-medium leading-[1.35] text-ink lg:text-[19px]">
+        <WatchOutIcon size={18} className="shrink-0 text-warning" />
+        Potential inconsistencies
+      </h2>
+      <p className="m-0 mt-2 font-sans text-[15px] leading-[1.55] text-ink-muted">
+        Places where two parts of your document appear to say different things.
+      </p>
+
+      <ul className="m-0 mt-5 list-none space-y-6 p-0">
+        {items.map((conflict) => (
+          <li key={conflict.id}>
+            <p className="m-0 font-sans text-[16px] leading-[1.6] text-ink-secondary">
+              {conflict.description}
+            </p>
+
+            {conflict.spans.length > 0 && (
+              <ul className="m-0 mt-3 list-none space-y-2.5 p-0">
+                {conflict.spans.map((span, i) => (
+                  <li
+                    key={span.sourceId ?? `${conflict.id}-${i}`}
+                    className="border-l-2 border-hairline-strong pl-3.5"
+                  >
+                    <blockquote
+                      lang="en"
+                      translate="no"
+                      className="m-0 font-ui text-[14.5px] leading-[1.6] text-ink break-words"
+                    >
+                      “{span.quote}”
+                    </blockquote>
+                    <p className="m-0 mt-1 font-ui text-[12.5px] leading-4 text-ink-muted">
+                      Page {span.page}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {conflict.note && (
+              <p className="m-0 mt-3 font-sans text-[14.5px] leading-[1.55] text-ink-muted">
+                {conflict.note}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
