@@ -73,3 +73,55 @@ def test_session_cookie_security_and_no_bearer_fallback(client, auth_session):
     assert resp_no_csrf.json()["error_code"] == "CSRF_ERROR"
 
 
+def test_cross_origin_session_cookie_policy(client):
+    """
+    Verifies that:
+    1. Local HTTP requests get SameSite=Lax (safe for local development without TLS).
+    2. Cross-origin / HTTPS / Render proxy requests get SameSite=None, Secure, and Partitioned
+       to comply with RFC 6265bis and browser cross-origin cookie mandates.
+    """
+    # 1. Local HTTP request
+    resp_local = client.post("/api/v1/sessions", json={"language": "en"})
+    assert resp_local.status_code == 201
+    set_cookie_local = resp_local.headers.get("set-cookie", "")
+    assert "samjo_session=" in set_cookie_local
+    assert "httponly" in set_cookie_local.lower()
+    assert "samesite=lax" in set_cookie_local.lower()
+    assert "secure" not in set_cookie_local.lower()
+
+    # 2. Render reverse proxy HTTPS request (x-forwarded-proto: https)
+    resp_proxy = client.post(
+        "/api/v1/sessions",
+        headers={
+            "X-Forwarded-Proto": "https",
+            "Origin": "https://samjho-legal-ai.vercel.app",
+            "X-Samjo-Session": "1",
+        },
+        json={"language": "en"},
+    )
+    assert resp_proxy.status_code == 201
+    set_cookie_proxy = resp_proxy.headers.get("set-cookie", "")
+    assert "samjo_session=" in set_cookie_proxy
+    assert "HttpOnly" in set_cookie_proxy
+    assert "samesite=none" in set_cookie_proxy.lower()
+    assert "secure" in set_cookie_proxy.lower()
+    assert "partitioned" in set_cookie_proxy.lower()
+
+
+def test_cors_preflight_allows_patch(client):
+    """Verifies that CORS preflight permits PATCH and custom headers."""
+    resp = client.options(
+        "/api/v1/documents/00000000-0000-0000-0000-000000000001/text",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "PATCH",
+            "Access-Control-Request-Headers": "x-samjo-session,content-type",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-credentials") == "true"
+    allowed_methods = resp.headers.get("access-control-allow-methods", "")
+    assert "PATCH" in allowed_methods
+
+
+

@@ -53,15 +53,26 @@ async def create_session(
     # Generate signed token
     token = session_serializer.generate_session_token(str(session_id))
 
-    # Set httpOnly Secure cookie
-    is_secure = settings.APP_ENV == "production"
+    # Determine if running over HTTPS (directly, via proxy, or in production)
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
+    is_https = (
+        settings.APP_ENV == "production"
+        or request.url.scheme == "https"
+        or forwarded_proto == "https"
+        or request.headers.get("origin", "").startswith("https://")
+    )
+
+    # Set httpOnly Secure partitioned cookie for cross-origin production support
+    # RFC 6265bis: cross-site fetch requires SameSite=None and Secure.
+    # Partitioned (CHIPS) ensures modern browsers do not drop cross-site cookies.
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,
         max_age=settings.SESSION_TTL_HOURS * 3600,
         httponly=True,
-        samesite="lax",
-        secure=is_secure,
+        samesite="none" if is_https else "lax",
+        secure=is_https,
+        partitioned=is_https,
         path="/",
     )
 
