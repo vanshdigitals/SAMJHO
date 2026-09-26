@@ -170,18 +170,11 @@ class DocumentExtractionService:
                 "injection_flags": list[str],
             }
         """
-        temp_file_path = None
-        os.makedirs(settings.UPLOAD_TMP_DIR, exist_ok=True)
-        # Generate safe random filename outside any served directory
         temp_file_path = os.path.join(
             settings.UPLOAD_TMP_DIR, f"upload_{uuid.uuid4().hex}.tmp"
         )
 
         try:
-            # Write bytes to temp file safely
-            with open(temp_file_path, "wb") as f:
-                f.write(raw_bytes)
-
             injection_flags: list[str] = []
             ocr_used = False
             ocr_confidence: float | None = None
@@ -197,7 +190,7 @@ class DocumentExtractionService:
                 injection_flags.extend(res.get("injection_flags", []))
 
             elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                res = await asyncio.to_thread(self._extract_docx, temp_file_path)
+                res = await asyncio.to_thread(self._extract_docx, temp_file_path, raw_bytes)
                 pages_data = res["pages"]
                 full_text = res["full_text"]
 
@@ -273,7 +266,14 @@ class DocumentExtractionService:
                 except Exception:
                     pass
 
-    def _extract_pdf_sync(self, file_path: str) -> tuple[str, list[dict], list[str]]:
+    def _extract_pdf_sync(
+        self, file_path: str, raw_bytes: bytes | None = None
+    ) -> tuple[str, list[dict], list[str]]:
+        if raw_bytes is not None:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "wb") as f:
+                f.write(raw_bytes)
+
         doc = fitz.open(file_path)
         pages_data = []
         full_text_pieces = []
@@ -336,9 +336,9 @@ class DocumentExtractionService:
         return full_extracted, pages_data, injection_flags
 
     async def _extract_pdf(self, file_path: str, raw_bytes: bytes) -> dict[str, Any]:
-        # Offload synchronous PyMuPDF dict parsing to worker thread to avoid blocking event loop
+        # Offload file write and synchronous PyMuPDF dict parsing to worker thread to avoid blocking event loop
         full_extracted, pages_data, injection_flags = await asyncio.to_thread(
-            self._extract_pdf_sync, file_path
+            self._extract_pdf_sync, file_path, raw_bytes
         )
 
         # Scanned PDF check: if very little text across pages, fallback to OCR
@@ -388,7 +388,14 @@ class DocumentExtractionService:
             "injection_flags": injection_flags,
         }
 
-    def _extract_docx(self, file_path: str) -> dict[str, Any]:
+    def _extract_docx(
+        self, file_path: str, raw_bytes: bytes | None = None
+    ) -> dict[str, Any]:
+        if raw_bytes is not None:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "wb") as f:
+                f.write(raw_bytes)
+
         doc = DocxDocument(file_path)
         paragraphs = []
         for p in doc.paragraphs:

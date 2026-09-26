@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.api.v1 import api_v1_router
@@ -123,7 +124,10 @@ app = FastAPI(
     redoc_url=None,
 )
 
-# 1. CORS Middleware
+# 1. GZip Compression Middleware (compresses responses >= 500 bytes for clients requesting gzip)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# 2. CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -133,8 +137,7 @@ app.add_middleware(
     expose_headers=["Content-Disposition"],
 )
 
-
-# 2. Security Headers Middleware
+# 3. Security Headers Middleware
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
     # Enforce request body size limits

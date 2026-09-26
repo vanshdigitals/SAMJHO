@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -89,7 +90,7 @@ class DocumentService:
             db.add(page_model)
 
         # 5. Encrypt extracted text with Fernet before writing to database
-        encrypted_text = encrypt_bytes(full_text.encode("utf-8"))
+        encrypted_text = await asyncio.to_thread(encrypt_bytes, full_text.encode("utf-8"))
 
         extraction = ExtractionModel(
             id=uuid.uuid4(),
