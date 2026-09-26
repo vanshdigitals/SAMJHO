@@ -1,234 +1,380 @@
-# SAMJO — Design System (Stitch-facing)
+# SAMJO — Canonical Design System
 
-> **Canonical source: `../DESIGN_SYSTEM.md`.** That file already defines the tokens, and they are correct. Nothing here overrides it. This document adds only what Stitch needs that the canonical file leaves to implementation: component state matrices, exact pixel metrics, and generation instructions.
->
-> If the two ever disagree, the canonical file wins.
+**Samajh aane tak.**  
+*Know where you stand.*
+
+This document is the authoritative, canonical design specification for SAMJO. It defines the brand principles, tokens, typography, colors, layout rules, component specifications, navigation, responsive behavior, accessibility guidelines, UI states, and landing page architecture needed to build and maintain the interface.
 
 ---
 
-## 1. Tokens — verbatim from canonical
+## 1. Brand & Product Identity
+
+### 1.1 Name & Positioning
+- **Name:** Samjo (pronounced *SAM-jo*), from the Hindi word **"समझो"** (understand).
+- **Tagline:** *"Samajh aane tak."* ("Until it makes sense.")
+- **Positioning:** *"Know where you stand."* — An India-first legal information and document-orientation product for residential rental agreements and housing notices.
+- **Support copy:** *"Legal documents ko samajhna mushkil nahi hona chahiye."*
+
+### 1.2 Purpose & Audience
+The user is often a stressed person holding a physical paper or digital document that frightens them. They are frequently:
+- Reading on a mobile phone on a variable or slow mobile connection.
+- Reading in their second language (English or Hindi).
+- Operating under an active, stressful deadline (e.g., notice to vacate, rent hike, deposit dispute).
+
+**The design's primary job is to lower the heart rate**, establish trust, and explain clearly item by item what the paper says, what matters, whether a clock is running, and what reasonable next steps exist.
+
+### 1.3 Tone & Voice
+- **Calm, trustworthy, unhurried, human, and dignified.**
+- Feels like a knowledgeable, quiet friend sitting beside you turning the pages.
+- Uses plain, respectful language. Avoids legal jargon and systemic AI terminology.
+- **Strict Legal Boundary:** Samjo provides document orientation and legal information—**never legal advice**. It never predicts court outcomes and never claims to replace an advocate.
+
+### 1.4 What Samjo Deliberately Refuses
+- **No generic AI SaaS tropes:** No purple/blue neon gradients, no mesh gradients, no floating iridescent blobs, no dark-mode cyber aesthetics, no AI sparkle icons (`✨`).
+- **No chatbot framing:** The core product is a structured document reading surface with an evidence rail, not an open-ended conversational prompt.
+- **No government portal density:** No claustrophobic tables, unstyled forms, or bureaucratic complexity.
+- **No marketing fluff:** No fake testimonials, fabricated user statistics, partner logo carousels, or aggressive upsell badges.
+- **No decorative animations:** No looping micro-interactions, no bounce effects, no scroll-jacking parallax, and no all-caps tracked-out eyebrow labels.
+
+---
+
+## 2. Color System & Tokens
+
+Colors are **strictly semantic**. Nothing is colored for decoration. A calm document is almost entirely ink on warm paper. Amber, red, and green appear **only** when they carry critical meaning.
+
+### 2.1 CSS Custom Properties (Tokens)
 
 ```css
 :root {
-  /* surfaces */
-  --background:      #F6F3EE;
-  --surface:         #FFFFFF;
-  --surface-subtle:  #EEEAE2;
+  /* Surfaces */
+  --background:        #F6F3EE;   /* Warm tactile paper */
+  --surface:           #FFFFFF;   /* Clean card and panel background */
+  --surface-subtle:    #EEEAE2;   /* Muted sections, quotes, secondary areas */
 
-  /* text */
-  --text-primary:    #131C2B;
-  --text-secondary:  #49566A;
-  --text-muted:      #6E7A8A;
+  /* Text & Ink */
+  --text-primary:      #131C2B;   /* Deep ink navy — primary reading color */
+  --text-secondary:    #49566A;   /* Slate ink — supporting explanations */
+  --text-muted:        #6E7A8A;   /* Muted ink — captions, metadata, borders */
 
-  /* structure */
-  --border:          #DDD6CC;
-  --border-strong:   #C4BBAE;
+  /* Structural Dividers */
+  --border:            #DDD6CC;   /* Standard hairline separator */
+  --border-strong:     #C4BBAE;   /* Input borders, active evidence rail */
 
-  /* action */
-  --primary:         #1B4DB1;
-  --primary-hover:   #163F92;
-  --primary-subtle:  #E8EEF9;
+  /* Interactive & Action */
+  --primary:           #1B4DB1;   /* Trustworthy deep blue */
+  --primary-hover:     #163F92;   /* Darkened interactive hover state */
+  --primary-subtle:    #E8EEF9;   /* Active tint, selection background */
 
-  /* semantic */
-  --warning:         #92600A;  --warning-surface: #FBF0DC;
-  --danger:          #A32219;  --danger-surface:  #FAE9E7;
-  --success:         #1C6244;  --success-surface: #E6F1EB;
+  /* Semantic Statuses */
+  --warning:           #92600A;   /* Caution amber */
+  --warning-surface:   #FBF0DC;   /* Light amber surface */
+  --danger:            #A32219;   /* Critical red */
+  --danger-surface:    #FAE9E7;   /* Light red surface */
+  --success:           #1C6244;   /* Verification green */
+  --success-surface:   #E6F1EB;   /* Light green surface */
 
-  /* focus */
-  --focus-ring:      #1B4DB1;
+  /* Focus Indicator */
+  --focus-ring:        #1B4DB1;   /* 2px solid ring with 2px offset */
 
-  /* spacing */
-  --space-1:4px;  --space-2:8px;  --space-3:12px; --space-4:16px;
-  --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
-  --space-12:48px;--space-16:64px;
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;  --space-6: 24px;  --space-8: 32px;  --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
 
-  /* radius */
-  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px;
+  /* Corner Radii */
+  --radius-sm: 8px;    /* Inputs, chips, tags */
+  --radius-md: 12px;   /* Buttons, cards, alert banners */
+  --radius-lg: 16px;   /* Modals, upload dropzones */
+  --radius-xl: 24px;   /* Mobile bottom sheet top corners */
 
-  /* elevation */
-  --shadow-subtle: 0 1px 2px rgba(19,28,43,0.06);
-  --shadow-medium: 0 8px 24px rgba(19,28,43,0.10);
+  /* Elevation (Reserved for floating overlays only) */
+  --shadow-subtle: 0 1px 2px rgba(19, 28, 43, 0.06);
+  --shadow-medium: 0 8px 24px rgba(19, 28, 43, 0.10);
 }
 ```
 
-Measured contrast (canonical §2): text-primary on background **14.2:1**, text-secondary **7.4:1**, text-muted **4.7:1**, primary on white **7.1:1**, warning on warning-surface **5.6:1**, danger on danger-surface **6.8:1**, success on success-surface **6.4:1**. All clear AA for body text. Do not darken or lighten any value when generating.
+### 2.2 Dark Theme Palette (Display Support)
+When dark theme is enabled via user display preferences (`.dark` class on root):
 
----
-
-## 2. Type scale
-
-| Role | Family | px / line-height | Weight | Use |
-|---|---|---|---|---|
-| Display | DM Sans | 40 / 44 | 500 | landing hero only |
-| H1 | DM Sans | 32 / 38 | 500 | page title |
-| H2 | DM Sans | 24 / 30 | 500 | briefing section heading |
-| H3 | DM Sans | 20 / 26 | 500 | item title |
-| Body Large | DM Sans | 18 / 28 | 400 | briefing prose — default reading size |
-| Body | DM Sans | 16 / 26 | 400 | interface text |
-| Body Small | Inter | 14 / 22 | 400 | evidence text, metadata |
-| Label | DM Sans | 14 / 20 | 500 | form labels, buttons |
-| Caption | Inter | 12 / 18 | 400 | confidence, page references |
-
-Weights **400 / 500 / 600 only — never 700.** Sentence case throughout. Measure capped at **68ch** at every breakpoint. Devanagari: **+4px line-height** at every size, and set `lang="hi"` on the element.
-
-Mobile deltas: Display drops to 32/38, H1 to 26/32, H2 to 20/26. **Body Large stays 18px on mobile** — it is the reading size and must not shrink.
-
----
-
-## 3. Grid
-
-| Viewport | Container | Columns | Gutter | Margin |
-|---|---|---|---|---|
-| 1440 | 1200 centred | 12 | 24 | auto |
-| 1280 | 1120 centred | 12 | 24 | 80 |
-| 1024 | 960 centred | 12 | 20 | 32 |
-| 768 | fluid | 8 | 16 | 24 |
-| 390 | fluid | 4 | 16 | 20 |
-| 360 | fluid | 4 | 12 | 16 |
-
-Briefing three-pane split at ≥1280: **sections 240 / briefing 640 (68ch cap) / evidence 320**, gutters 32. At 1024–1279 the evidence rail becomes a right drawer. Below 1024, single column.
-
----
-
-## 4. Component state matrix
-
-Every reusable component defines all nine states. Generate them as a visible sheet in Batch 1.
-
-### Button
-
-| State | Primary | Secondary | Quiet | Danger |
-|---|---|---|---|---|
-| Default | `#1B4DB1` fill, white text | white fill, 1px `#C4BBAE`, ink text | transparent, `#1B4DB1` text | `#A32219` fill, white text |
-| Hover | `#163F92` | `#F6F3EE` fill | `#E8EEF9` fill | darken 8% |
-| Focus | + 2px `#1B4DB1` ring, 2px offset | same | same | same |
-| Pressed | `#163F92`, scale 0.99 | `#EEEAE2` | `#E8EEF9` | darken 12% |
-| Disabled | `#C4BBAE` fill, `#FFFFFF` text, cursor not-allowed | `#DDD6CC` border, `#6E7A8A` text | `#6E7A8A` text | as primary |
-| Loading | spinner replaces label, width held, `aria-busy` | same | same | same |
-
-Heights **sm 36 / md 44 / lg 52**, radius 12, horizontal padding 20 (sm 16, lg 24). Never below 44 on touch. Never append an arrow glyph.
-
-### Input / Textarea / Select
-
-| State | Treatment |
-|---|---|
-| Default | white fill, 1px `--border`, radius 8, 44px min height, 12/16 padding |
-| Hover | border `--border-strong` |
-| Focus | 2px `--focus-ring` ring, 2px offset, border `--primary` |
-| Filled | ink text 16px |
-| Disabled | `--surface-subtle` fill, `--text-muted` text |
-| Error | 1px `--danger` border + message below in `--danger` 14px + `alert-triangle` icon; wired by `aria-describedby` |
-| Success | `--success` check at trailing edge + word confirmation |
-
-**Label always visible above the field.** Placeholder is never the label. Helper text sits below in `--text-muted` Caption.
-
-### FileDropzone
-
-| State | Treatment |
-|---|---|
-| Idle | 2px dashed `--border-strong`, radius 16, `--surface` fill, 240px tall desktop / 180 mobile, upload icon 32px `--text-muted`, heading + helper + "Choose a file" secondary button |
-| Hover | border `--primary`, fill `--primary-subtle` |
-| Drag over | border 2px solid `--primary`, fill `--primary-subtle`, helper swaps to "Drop it here" |
-| Focus | 2px focus ring around the whole zone |
-| Uploading | becomes UploadCard with indeterminate bar |
-| Error | border `--danger`, `--danger-surface` fill, message inside, file retained |
-| Disabled | `--surface-subtle`, `--text-muted` |
-
-Drag is never the only path — a real "Choose a file" button is always present and keyboard-reachable.
-
-### UrgencyBadge / Banner
-
-| Level | Form | Fill | Text/icon | Words |
-|---|---|---|---|---|
-| LOW | none | — | `--text-muted` | "No deadline found in this document." |
-| MEDIUM | inline chip | `--warning-surface` | `--warning` + clock | "Time-sensitive" |
-| HIGH | full banner | `--warning-surface`, 1px `--warning` at 30% | `--warning` + alert-triangle | "Time-sensitive" |
-| CRITICAL | full banner | `--danger-surface`, 1px `--danger` at 30% | `--danger` + alert-triangle | "Urgent" |
-
-Banner: radius 12, padding 16/20, icon 20px at top-left, heading Label 14/500, body Body 16/400, deadline date H3 20/500, then a primary button. **Icon + word are mandatory. Never colour alone.**
-
-### SourceChip (the rail marker)
-
-| State | Treatment |
-|---|---|
-| Default | 8px filled circle `--primary`, centred in a 44×44 invisible hit area |
-| Hover | 10px, `--primary-hover` |
-| Focus | 2px ring, 2px offset, on the 44px box |
-| Active / open | 10px filled + 3px `--primary-subtle` halo |
-| Needs verification | **hollow** 8px circle, 1.5px `--warning` stroke, **plus the word "Verify"** in `--warning` Caption beside the item title |
-
-Accessible name pattern: `Where this comes from: {item title}`.
-
-### EvidenceCard
-
-Fixed internal order, never reordered, never merged:
-
-```
-Where this comes from                          ✕
-──────────────────────────────────────────────
-Document says                          ← Label, --text-muted
-"The Tenant shall deposit a sum of
- Rs. 25,000/- as interest-free security"   ← Inter 14/22, --text-primary,
-                                              --surface-subtle fill, radius 8,
-                                              3px --border-strong left edge,
-                                              padding 12/16
-Page 1                                     ← Caption, --text-muted
-──────────────────────────────────────────────
-Samjo interprets                       ← Label, --text-muted
-This is refundable, but the agreement      ← Body 16/26, --text-primary
-sets conditions for deductions.
-──────────────────────────────────────────────
-How confident is Samjo?   High         ← Label + value, --text-primary
-[Verify · what to confirm]             ← only when needs_verification
-──────────────────────────────────────────────
-[ See it in the document ]             ← secondary button, full width
+```css
+.dark {
+  --background:        #0D1117;
+  --surface:           #161B22;
+  --surface-subtle:    #21262D;
+  --text-primary:      #F0F6FC;
+  --text-secondary:    #C9D1D9;
+  --text-muted:        #8B949E;
+  --border:            #30363D;
+  --border-strong:     #484F58;
+  --primary:           #388BFD;
+  --primary-hover:     #58A6FF;
+  --primary-subtle:    rgba(56, 139, 253, 0.15);
+  --warning:           #D29922;
+  --warning-surface:   rgba(187, 128, 9, 0.15);
+  --danger:            #F85149;
+  --danger-surface:    rgba(248, 81, 73, 0.15);
+  --success:           #3FB950;
+  --success-surface:   rgba(46, 160, 67, 0.15);
+  --focus-ring:        #58A6FF;
+}
 ```
 
-Separators are 1px `--border` hairlines, 16px above and below. **The quote is never translated**, even when the interface is in Hindi — only the interpretation is.
+### 2.3 Measured Contrast Ratios (WCAG 2.1 / 2.2 AA)
+All color combinations clear WCAG 2.1 AA standards for body text:
+- `--text-primary` (`#131C2B`) on `--background` (`#F6F3EE`): **14.2:1**
+- `--text-secondary` (`#49566A`) on `--background` (`#F6F3EE`): **7.4:1**
+- `--text-muted` (`#6E7A8A`) on `--background` (`#F6F3EE`): **4.7:1** (AA body)
+- `--primary` (`#1B4DB1`) on white surface: **7.1:1**
+- `--warning` (`#92600A`) on `--warning-surface` (`#FBF0DC`): **5.6:1**
+- `--danger` (`#A32219`) on `--danger-surface` (`#FAE9E7`): **6.8:1**
+- `--success` (`#1C6244`) on `--success-surface` (`#E6F1EB`): **6.4:1**
 
-### Accordion (mobile briefing sections)
-
-Header 56px, chevron trailing, `aria-expanded`. First two sections open by default. Divider 1px `--border` between items. No fill change on expand.
-
-### LanguageSwitcher
-
-Header popover. Two options, each **in its own script**: `English`, `हिन्दी`. Current marked with a check and `aria-current`. Globe icon 20px. Never a flag icon.
-
-### AudioPlayer
-
-Docked bar, 56px, `--surface`, 1px top border, `--shadow-medium`. Controls: `Listen` → `Pause` / `Resume` / `Stop`, each a 44px target with a visible text label, not icon-only. Never autoplays. State changes announce politely. Position: bottom of the reading column on desktop, above the bottom bar on mobile.
-
-### ProgressIndicator
-
-Stage name as text (Body 16/500) + indeterminate 2px bar in `--primary` on `--surface-subtle`. **Never a percentage.** Completed stages show a `--success` check and drop to `--text-muted`.
-
-### Skeleton
-
-Matches final layout metrics exactly so nothing reflows. `--surface-subtle` fill, no shimmer animation under `prefers-reduced-motion`, otherwise a 1.4s opacity pulse between 100% and 60%. No sweeping gradient — a gradient shimmer violates the no-gradient rule.
-
-### Toast
-
-Bottom-centre desktop, above the bottom bar on mobile. `--surface`, 1px `--border`, `--shadow-medium`, radius 12. Polite live region. Never the only channel for important information.
+### 2.4 Non-Color Reliance Rule
+**Never communicate information through color alone:**
+- **Urgency:** Always combines color + icon + text (e.g. Amber surface + Clock icon + *"Time-sensitive"*).
+- **Evidence Verification:** Always combines shape + word (e.g. Hollow circle + the word *"Verify"*).
+- **Confidence:** Explicit text label (e.g. *"High"*, *"Medium"*, *"Low"*), never a coloured bar or indicator alone.
+- **Form Errors:** Red border + Alert triangle icon + descriptive helper error message.
 
 ---
 
-## 5. Iconography
+## 3. Typography & Typesetting
 
-Single minimal line set: 1.5px stroke, rounded caps and joins, 20px default, 24px in banners, 32px in empty states. Approved list only:
+The system uses two font families, self-hosted as `woff2` files for maximum privacy and zero latency on slow mobile networks:
+1. **DM Sans:** Brand voice, headings, interface buttons, and briefing prose.
+2. **Inter:** Dense functional content, extracted legal quotations, tabular data, money amounts, dates, and metadata.
 
-`document · upload · camera · alert-triangle · clock · calendar · rupee · check · question · shield · volume · globe · trash · chevron-down · chevron-right · arrow-left · external-link · info · close · search`
+### 3.1 Type Scale
 
-Icons support comprehension; they never decorate. **No AI sparkle glyph anywhere.** Not every card gets an icon — only banners, empty states, errors, and controls that need one.
+| Role | Family | Size / Line-height | Weight | Desktop Use | Mobile Delta |
+|---|---|---|---|---|---|
+| **Display** | DM Sans | 40px / 44px | 500 | Landing hero only | 32px / 38px |
+| **H1** | DM Sans | 32px / 38px | 500 | Main page titles | 26px / 32px |
+| **H2** | DM Sans | 24px / 30px | 500 | Briefing section headings | 20px / 26px |
+| **H3** | DM Sans | 20px / 26px | 500 | Item titles, modal titles | 18px / 24px |
+| **Body Large** | DM Sans | 18px / 28px | 400 | **Briefing prose reading size** | **18px / 28px (Unchanged)** |
+| **Body** | DM Sans | 16px / 26px | 400 | Interface prose, descriptions | 16px / 26px |
+| **Body Small** | Inter | 14px / 22px | 400 | Quoted document text, metadata | 14px / 22px |
+| **Label** | DM Sans | 14px / 20px | 500 | Button labels, form inputs | 14px / 20px |
+| **Caption** | Inter | 12px / 18px | 400 | Page numbers, confidence tags | 12px / 18px |
+
+### 3.2 Invariants & Rules
+- **Weights:** Restricted strictly to **400 (regular), 500 (medium), and 600 (semibold)**. Weight 700 (bold) is prohibited everywhere.
+- **Body Large Never Shrinks:** Body Large (18px) stays 18px on mobile devices. A stressed reader on a mobile phone requires high legibility.
+- **Reading Measure Invariant:** The line width of prose text is capped at **68ch** (~560px to 640px) across all viewports. Desktop screens provide wider side margins/whitespace, never wider lines of text.
+- **Sentence Case:** Used exclusively across titles, headings, badges, and buttons. No ALL-CAPS text or tracked-out eyebrow labels.
+- **Devanagari Support (Hindi):** When displaying Hindi text (`lang="hi"`), add **+4px line-height** to prevent vowel ascenders/descenders from clipping.
 
 ---
 
-## 6. What this system deliberately refuses
+## 4. Spacing, Elevation & Layout Principles
 
-From canonical §1, restated because generated design reverts to these by default:
+### 4.1 Grid & Viewport Breakpoints
 
-- No high-contrast serif display over cream. The base is warm, the type is DM Sans, the accent is ink blue — **not terracotta**.
-- No identical-radius card kit with one grey shadow under everything.
-- No all-caps tracked-out eyebrow labels.
-- No `01 / 02 / 03` numbered markers — except the lawyer-prep checklist, which genuinely is a sequence.
-- No arrows appended to button text.
-- No per-section fade-and-slide entrances.
-- No glassmorphism, neumorphism, floating blobs, mesh backgrounds, or decorative shapes.
+| Breakpoint | Viewport Range | Max Container | Columns | Gutter | Page Margin |
+|---|---|---|---|---|---|
+| **xs** | 320px – 389px | Fluid | 4 | 12px | 16px |
+| **sm** | 390px – 767px | Fluid (Mobile ref) | 4 | 16px | 20px |
+| **md** | 768px – 1023px | Fluid / 680px centered | 8 | 16px | 24px |
+| **lg** | 1024px – 1279px | 960px centered | 12 | 20px | 32px |
+| **xl** | 1280px+ | 1200px centered (1440 ref) | 12 | 24px | auto |
+
+### 4.2 Three-Pane Desktop Briefing Layout (≥1280px)
+At viewports ≥1280px, the briefing utilizes a three-pane structure:
+- **Left Pane (240px, sticky):** Section navigation jump-list with active scroll-spy indicator.
+- **Center Pane (640px max, 68ch measure):** Continuous reading surface with the evidence rail down its left edge.
+- **Right Pane (320px, permanent):** Evidence and document verification panel. When no source is selected, displays guidance to tap any rail marker.
+
+### 4.3 Responsive Layout Transformations
+- **lg (1024px – 1279px):** Left navigation collapses to an inline section bar; evidence pane becomes an overlay right drawer (360px) over the briefing.
+- **<1024px (Mobile/Tablet):** Briefing sections transform into an accessible accordion (first two open by default). The evidence panel becomes an **80vh bottom sheet**. This keeps the tapped briefing claim visible above the sheet.
+
+---
+
+## 5. The Evidence Rail (Core Identity Element)
+
+The evidence rail is the physical manifestation of SAMJO's core thesis: **every claim is grounded in verified source text**.
+
+```
+│
+├── ●  What you need to do
+│      Pay a security deposit of ₹25,000 before you move in.
+│      ┌──────────────────────────────────────────────┐
+│      │ Where this comes from                        │  ← Active marker tapped
+│      │                                              │
+│      │ Document says                                │
+│      │ "The Tenant shall deposit a sum of           │
+│      │  Rs. 25,000/- as interest-free security"     │
+│      │ Page 1                                       │
+│      │                                              │
+│      │ Samjo interprets                             │
+│      │ This is refundable, but the agreement        │
+│      │ sets conditions for deductions.              │
+│      │                                              │
+│      │ How confident is Samjo?  High                │
+│      │                                              │
+│      │ [ See it in the document ]                   │
+│      └──────────────────────────────────────────────┘
+│
+├── ○  Give 30 days notice before leaving   Verify
+│
+```
+
+### 5.1 Evidence Rail Specs
+- **Rail Line:** 1px solid `--border-strong` (`#C4BBAE`), inset 12px from content edge.
+- **Source Marker:** 8px filled circle in `--primary` (`#1B4DB1`).
+- **Hit Area:** An invisible 44px × 44px bounding box centered over the 8px dot to satisfy touch-target standards.
+- **Active State:** 10px filled dot with a 3px `--primary-subtle` halo.
+- **Verification Required State:** 8px hollow circle with a 1.5px `--warning` stroke + the text label *"Verify"* in 12px Caption beside the item title.
+- **Accessible Name:** `Where this comes from: {item title}`.
+
+### 5.2 Evidence Card Structure
+The evidence display (pane, drawer, or sheet) enforces a strict 4-part internal order that never changes:
+1. **Document says:** The exact quoted span from the original document in Inter 14/22 on a `--surface-subtle` card with a 3px `--border-strong` left bar. **The quote is never translated**, preserving legal authenticity.
+2. **Page & Location:** Caption with page reference (e.g., *"Page 1, Clause 4"*).
+3. **Samjo interprets:** Plain-language explanation in Body 16/26. Translated to user's selected language.
+4. **Confidence & Actions:** Confidence label (*High*, *Medium*, or *Low*) + primary action button (*"See it in the document"*).
+
+---
+
+## 6. Components Specification
+
+### 6.1 Buttons
+- **Variants:**
+  - `Primary`: Solid `--primary` fill (`#1B4DB1`), white text.
+  - `Secondary`: White fill, 1px `--border-strong` (`#C4BBAE`), `--text-primary` text.
+  - `Quiet`: Transparent background, `--primary` text, hover `--primary-subtle` tint.
+  - `Danger`: Solid `--danger` fill (`#A32219`), white text.
+- **Sizes:**
+  - `sm`: 36px height (desktop pointer only, never on mobile).
+  - `md`: 44px height (default interface target).
+  - `lg`: 52px height (landing hero and mobile bottom action bars).
+- **Touch Target Invariant:** Minimum 44px on all touch viewports. Never append arrow glyphs (`->` or `→`) to button text.
+
+### 6.2 Forms & Inputs
+- **Input, Textarea, Select:** 44px min height, 8px radius, white fill, 1px `--border` (`#DDD6CC`).
+- **Labels:** Always persistently visible above the field in Label 14/500 `--text-primary`. Placeholders are never used as labels.
+- **Error Presentation:** 1px `--danger` border, alert icon, and helper text below tied via `aria-describedby`.
+
+### 6.3 FileDropzone & UploadCard
+- **Dropzone:** 240px height (desktop) / 180px (mobile), 2px dashed `--border-strong`, radius 16px.
+- **Keyboard Access:** A visible "Choose a file" button is always present inside the zone.
+- **Mobile Camera First:** On mobile, a dedicated secondary button *"Take a photo"* (52px height) sits directly beneath the dropzone for direct mobile document capture.
+- **UploadCard:** Replaces dropzone during upload; displays filename, file size, page count, indeterminate progress bar, and a Cancel button.
+
+### 6.4 Urgency Banners & Badges
+
+| Urgency Level | Visual Form | Surface / Border | Text / Icon | Wording |
+|---|---|---|---|---|
+| **LOW** | Inline text | None | `--text-muted` | *"No deadline found in this document."* |
+| **MEDIUM** | Inline chip | `--warning-surface` | `--warning` + Clock icon | *"Time-sensitive"* |
+| **HIGH** | Full banner | `--warning-surface`, 1px 30% border | `--warning` + Alert triangle | *"Time-sensitive"* + deadline date in H3 |
+| **CRITICAL** | Full banner | `--danger-surface`, 1px 30% border | `--danger` + Alert triangle | *"Urgent"* + deadline date + lawyer assistance CTA |
+
+### 6.5 Audio Player (Read Aloud)
+- Docked bar (56px) positioned at the bottom of the reading column on desktop, or above the bottom bar on mobile.
+- Controls: `Listen`, `Pause`, `Resume`, `Stop`.
+- Each action is a 44px touch target with a visible text label.
+- Never autoplays. Announces state changes via an ARIA live region.
+
+### 6.6 Language Switcher
+- Persistent header control displaying two explicit options in their own native script: **English** and **हिन्दी**.
+- Active option indicated by a checkmark and `aria-current="true"`.
+- Uses a neutral Globe icon (20px). Country flag icons are strictly prohibited.
+
+---
+
+## 7. Navigation & Header System
+
+The application distinguishes between two specific header contexts to avoid mixing marketing and task controls.
+
+### 7.1 Marketing Header (`/`, `/privacy`, `/safety`, `/accessibility`)
+- **Desktop (64px, `--surface`, 1px bottom border):**
+  - Left: "Samjo" wordmark in DM Sans 20/500 `--text-primary`.
+  - Center/Right: Navigation links (*"How it works"*, *"What Samjo does"*, *"Privacy"*).
+  - Far Right: Language switcher + Primary CTA button (*"Start"*).
+- **Mobile (56px, sticky):**
+  - Left: "Samjo" wordmark.
+  - Right: Language switcher + compact Start button.
+
+### 7.2 App Header (`/upload`, `/d/:id`, `/situation`, `/help`)
+- **Desktop (64px, `--surface`, 1px bottom border):**
+  - Left: "Samjo" wordmark or Back button + Document title (truncated with ellipsis).
+  - Right: Language switcher, Display settings popover (Theme + Text size), Read aloud trigger, and `⋯` overflow menu (Export, Delete data, Professional help).
+- **Mobile (56px, sticky):**
+  - Left: Back chevron (44px target) + Document title.
+  - Right: `⋯` overflow icon opening a bottom sheet holding Language, Display, Audio, Export, and Delete actions.
+
+### 7.3 Mobile Bottom Action Bar
+- Height: 72px + device safe-area inset. `--surface` fill, 1px top border, `--shadow-subtle`.
+- Houses a single full-width primary button (52px height) for the primary progression action (e.g. *"What to do next"*, *"Continue"*).
+
+---
+
+## 8. UI States (The 6-State Framework)
+
+Every asynchronous surface implements all six standard states:
+
+1. **Loading:**
+   - Real pipeline stage descriptions (*"Reading your document"*, *"Working out what this is"*, *"Finding what matters"*).
+   - Indeterminate progress bar. **Fabricated percentage meters are strictly forbidden.**
+   - Skeletons match exact final component dimensions to avoid layout shift (CLS = 0).
+2. **Success:**
+   - Complete rendering with active evidence rail and interactive source markers.
+3. **Empty:**
+   - Courteous explanation and clear call to action (e.g., *"No financial amounts were found in this agreement."*). Section headings are never silently hidden.
+4. **Partial:**
+   - Completed sections render normally; failed sections present an inline retry banner (*"Samjo couldn't finish this section. [Try this section again]"*).
+5. **Error:**
+   - Clear plain-language explanation of what occurred and concrete next step.
+   - **Never use generic messages like "Something went wrong."**
+   - **Uploaded file is always preserved** so the user never has to re-upload.
+6. **Retry:**
+   - Single-click action that re-initiates analysis using the existing file or session.
+
+### Standard Error Copy Reference
+
+| Condition | Verified Error Copy | Primary Action |
+|---|---|---|
+| **Unreadable File** | *"Samjo couldn't read this document. It looks like a scan with no text layer. Try a clearer photo, or upload the original PDF."* | Try another file |
+| **Encrypted PDF** | *"This PDF is password-protected, so Samjo can't open it. Remove the password and upload it again."* | Try another file |
+| **File Too Large** | *"This file is over 10 MB. Try uploading just the pages that matter."* | Try another file |
+| **Unsupported Type** | *"Samjo reads PDF, Word and photos. This file is a different type."* | Choose file |
+| **Non-Legal Document** | *"This doesn't look like a legal document. If something has happened and you want help thinking it through, tell us about it instead."* | Tell us what happened |
+| **Analysis Failure** | *"Samjo read your document but couldn't finish the briefing. Your file is still here. Try again."* | Try again |
+| **Offline** | *"You're offline. Samjo will pick up where you left off when you reconnect."* | Retry connection |
+
+---
+
+## 9. Landing Page Architecture
+
+The landing page (`/`) is structured to establish immediate trust and orientation rather than selling software:
+
+1. **Hero Section (Left-Aligned, 680px Max Measure):**
+   - Left-aligned layout rather than centered SaaS default.
+   - Wordmark lockup: `Samjo` + `Samajh aane tak.`
+   - Bilingual empathy header: *"Legal documents ko samajhna mushkil nahi hona chahiye."*
+   - Clear two-door CTA:
+     - `[ I have a document ]` (Primary 52px button → `/upload`)
+     - `[ Something happened ]` (Secondary 52px button → `/situation`)
+   - Trust strip: `Source-grounded · Private by design · Hindi + English · Read aloud` (plain text with middot separators, no boxes).
+2. **Proof Section (Show, Don't Tell):**
+   - Direct demonstration of the product rather than feature cards.
+   - A real briefing excerpt at 60% scale with a visible evidence rail and an open source card demonstrating exact document citation.
+   - Supporting heading: *"Every claim points back to your document."*
+3. **Boundaries & Transparency Section ("What Samjo does not do"):**
+   - Full-bleed band on `--surface-subtle`.
+   - Clear bulleted list stating what Samjo does not do: does not give legal advice, does not predict case outcomes, does not store documents permanently.
+
+---
+
+## 10. Accessibility (WCAG 2.1 / 2.2 AA)
+
+SAMJO commits to testable WCAG 2.2 AA conformance across all routes.
+
+- **Keyboard Traversal:** Every interactive element is fully reachable via keyboard.
+- **Focus Rings:** 2px solid `--focus-ring` with 2px offset. Focus is never suppressed (`outline: none` without replacement is a build failure).
+- **Focus Management:** Modals, right drawers, and bottom sheets trap focus while open, close on `Escape`, and return focus to the exact triggering element (e.g. the rail marker).
+- **Touch Targets:** Minimum 44px × 44px for every interactive target across desktop and mobile.
+- **Reduced Motion:** When `prefers-reduced-motion: reduce` is active, all section reveal staggered sequences and layout transitions are disabled; only instant opacity changes (<100ms) are permitted.
+- **Screen Reader Announcements:** Pipeline stages and completion states announce through polite ARIA live regions (`aria-live="polite"`).

@@ -35,18 +35,19 @@ No vector database. No RAG. No fine-tuning. No agents. The corpus is one documen
 
 | Document | Contents |
 |---|---|
-| [PRD](docs/PRD.md) | Problem, users, jobs, features, acceptance criteria |
-| [TRD](docs/TRD.md) | Stack, architecture, pipeline, deployment |
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | System diagrams |
-| [UX_FLOWS](docs/UX_FLOWS.md) | Screens, states, microcopy |
-| [DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md) | Tokens, type, components |
-| [API](docs/API.md) | REST contracts |
-| [DATABASE](docs/DATABASE.md) | Schema and retention |
-| [AI_SCHEMAS](docs/AI_SCHEMAS.md) | Pydantic output contracts |
-| [AI_SAFETY](docs/AI_SAFETY.md) | Information vs advice boundary |
-| [SECURITY](docs/SECURITY.md) | Threat model, injection defence |
-| [ACCESSIBILITY](docs/ACCESSIBILITY.md) | WCAG 2.2 AA commitments |
-| [TESTING](docs/TESTING.md) | Test strategy and cases |
+| [PRD](PRD.md) | Problem, users, jobs, features, acceptance criteria |
+| [TRD](TRD.md) | Stack, architecture, pipeline, deployment |
+| [ARCHITECTURE](ARCHITECTURE.md) | System diagrams |
+| [UX_FLOWS](UX_FLOWS.md) | Screens, states, microcopy |
+| [DESIGN_SYSTEM](design/SAMJO_DESIGN_SYSTEM.md) | Canonical tokens, typography, components, responsive rules |
+| [API](API.md) | REST contracts |
+| [DATABASE](DATABASE.md) | Schema and retention |
+| [AI_SCHEMAS](AI_SCHEMAS.md) | Pydantic output contracts |
+| [AI_SAFETY](AI_SAFETY.md) | Information vs advice boundary |
+| [SECURITY](SECURITY.md) | Threat model, injection defence |
+| [ACCESSIBILITY](ACCESSIBILITY.md) | WCAG 2.2 AA commitments |
+| [TESTING](TESTING.md) | Test strategy and cases |
+| [CONTRIBUTING](CONTRIBUTING.md) | Contribution standards and rules |
 
 ## Repository layout
 
@@ -54,7 +55,7 @@ No vector database. No RAG. No fine-tuning. No agents. The corpus is one documen
 samjo/
   frontend/          React + TypeScript + Vite
   backend/           FastAPI application
-  docs/              Specifications
+  design/            Design system specifications
   fixtures/          Test documents, including adversarial ones
   .env.example
 ```
@@ -148,4 +149,4 @@ paid plan, move `alembic upgrade head` into `preDeployCommand`.
 
 ## Status
 
-Phase 0 complete: specifications. See [TRD, Implementation order](docs/TRD.md#implementation-order) for what lands next.
+Phase 0 complete: specifications. See [TRD, Implementation order](TRD.md#implementation-order) for what lands next.
